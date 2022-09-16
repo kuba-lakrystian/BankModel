@@ -16,9 +16,9 @@ class DataLoader:
         return data_loaded
 
     def train_test_load(self):
-        self.data_train_raw = self._load_files("".join([DATA_PATH, "train.csv"]))
-        self.data_test_raw = self._load_files("".join([DATA_PATH, "test.csv"]))
+        self.data_train_raw = self._load_files(EMPTY_STR.join([DATA_PATH, "train.csv"]))
+        self.data_test_raw = self._load_files(EMPTY_STR.join([DATA_PATH, "test.csv"]))
         return self.data_train_raw
 
 
-data_test_raw = pd.read_csv("".join([DATA_PATH, "test.csv"]))
+data_test_raw = pd.read_csv(EMPTY_STR.join([DATA_PATH, "test.csv"]))
