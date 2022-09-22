@@ -4,7 +4,6 @@ from src.data_utils.constants import *
 
 
 class DataLoader:
-
     def __init__(self):
         self.data_train_raw = None
         self.data_test_raw = None
@@ -16,9 +15,10 @@ class DataLoader:
         return data_loaded
 
     def train_test_load(self):
-        self.data_train_raw = self._load_files(EMPTY_STR.join([DATA_PATH, "train.csv"]))
-        self.data_test_raw = self._load_files(EMPTY_STR.join([DATA_PATH, "test.csv"]))
+        self.data_train_raw = self._load_files(
+            EMPTY_STR.join([DATA_PATH, "data_recommendation_engine/train_ver2.csv"])
+        )
+        self.data_test_raw = self._load_files(
+            EMPTY_STR.join([DATA_PATH, "data_recommendation_engine/test_ver2.csv"])
+        )
         return self.data_train_raw
-
-
-data_test_raw = pd.read_csv(EMPTY_STR.join([DATA_PATH, "test.csv"]))

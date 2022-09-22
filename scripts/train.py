@@ -9,7 +9,8 @@ def train():
     data_train = dl.train_test_load()
     dp = DataPreprocess()
     dp.load_data(data_train)
-    data_preprocessed = dp.choose_variables()
+    data_preprocessed = dp.prepare_target()
+    data_target, data_training = dp.extract_data_range()
     print(data_preprocessed)
 
 
