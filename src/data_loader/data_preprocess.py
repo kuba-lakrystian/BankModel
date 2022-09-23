@@ -57,13 +57,12 @@ class DataPreprocess:
         df_target_final = df_target_final[
             df_target_final[NCODPERS].isin(df_final_final[NCODPERS].unique())
         ]
+        constant_variables = df_final_final.columns[df_final_final.nunique() <= 1]
+        df_final_final = df_final_final.drop(columns=list(constant_variables))
         self._release_memory()
         Serialization.save_state(df_target_final, "df_target_final", "data")
         Serialization.save_state(df_final_final, "df_final_final", "data")
-        return (
-            df_target_final,
-            df_final_final[[NCODPERS, IND_EMPLEADO, SEXO, AGE, RENTA]],
-        )
+        return df_target_final, df_final_final
 
     def _release_memory(self):
         self.df = None

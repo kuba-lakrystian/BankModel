@@ -75,3 +75,6 @@ class FeatureSelection:
         ]
         df_fin = df_3m_agg.merge(df_6m_agg, how="inner", on=[NCODPERS])
         return df_fin
+
+    def prepare_general_variables(self):
+        df_individual = self.df[self.df[FECHA_DATO] == self.df[FECHA_DATO].max()]

@@ -10,7 +10,7 @@ TARGET = "target"
 
 FECHA_DATO = "fecha_dato"  # Period ID
 NCODPERS = "ncodpers"  # Customer ID
-IND_EMPLEADO = "ind_empleado"  # Employee status in the bank: A active, B ex employed, F filial, N not employee, P passive
+IND_EMPLEADO = "ind_empleado"  # Is it an employee: A active, B ex employed, F filial, N not employee, P passive
 PAIS_RESIDENCIA = "pais_residencia"  # Citizenship
 SEXO = "sexo"  # Gender
 AGE = "age"  # Age
