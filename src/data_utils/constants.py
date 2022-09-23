@@ -1,8 +1,10 @@
 import pandas as pd
 
-DATA_PATH = "data/"
+DATA_PATH = "data"
 
+DOT_STR = "."
 EMPTY_STR = ""
+SLASH_STR = "/"
 
 TARGET = "target"
 

@@ -2,6 +2,9 @@ import numpy as np
 import pandas as pd
 
 from src.data_utils.constants import *
+from src.data_utils.helpers import Serialization
+
+pd.set_option("mode.chained_assignment", None)
 
 
 class DataPreprocess:
@@ -39,7 +42,7 @@ class DataPreprocess:
         df_target_final = self.df_target[self.df_target[FECHA_DATO] == "2015-07-28"]
         df_final = self.df
         df_final["date"] = pd.to_datetime(df_final[FECHA_DATO])
-        mask = (df_final["date"] > "2015-01-01") & (df_final["date"] <= "2015-6-30")
+        mask = (df_final["date"] > "2015-01-01") & (df_final["date"] <= "2015-06-30")
         df_final_final = self.df[mask]
         df_final_final = df_final_final[
             df_final_final[NCODPERS].isin(df_target_final[NCODPERS].unique())
@@ -54,4 +57,14 @@ class DataPreprocess:
         df_target_final = df_target_final[
             df_target_final[NCODPERS].isin(df_final_final[NCODPERS].unique())
         ]
-        return df_target_final, df_final_final
+        self._release_memory()
+        Serialization.save_state(df_target_final, "df_target_final", "data")
+        Serialization.save_state(df_final_final, "df_final_final", "data")
+        return (
+            df_target_final,
+            df_final_final[[NCODPERS, IND_EMPLEADO, SEXO, AGE, RENTA]],
+        )
+
+    def _release_memory(self):
+        self.df = None
+        self.df_target = None
