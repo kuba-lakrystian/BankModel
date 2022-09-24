@@ -50,6 +50,7 @@ class TrainMLModel:
             self.xgb_model = xgb.XGBClassifier(n_jobs=multiprocessing.cpu_count())
         self.xgb_model.fit(X_train, y_train)
         self.df['predict_proba'] = self.predict(X_train)
+        self.calculate_hit_rate_and_lift()
         return self.df
 
     def predict(self, X):
@@ -95,3 +96,27 @@ class TrainMLModel:
         rs_model.fit(self.X_train, self.y_train)
         print(rs_model.best_params_)
         return rs_model.best_params_
+
+    def calculate_hit_rate_and_lift(self):
+        results = pd.DataFrame(columns = ['Measure', 'Population', 'HR', 'Lift'])
+        results.loc[0, 'Measure'] = 'Hit rate entire population'
+        results.loc[0, 'Population'] = len(self.df)
+        results.loc[0, 'HR'] = self.df[TARGET].mean()
+        df_temp = self.df.sort_values('predict_proba', ascending=False)
+        results.loc[1, 'Measure'] = 'Hit rate top 2.5%'
+        df_temp_25_perc = df_temp[0:int(0.025*len(df_temp))]
+        results.loc[1, 'Population'] = int(0.025*len(df_temp))
+        results.loc[1, 'HR'] = df_temp_25_perc[TARGET].mean()
+        results.loc[1, 'Lift'] = results.loc[1, 'HR']/results.loc[0, 'HR']
+        results.loc[2, 'Measure'] = 'Hit rate top 5%'
+        df_temp_5_perc = df_temp[0:int(0.05*len(df_temp))]
+        results.loc[2, 'Population'] = int(0.05 * len(df_temp))
+        results.loc[2, 'HR'] = df_temp_5_perc[TARGET].mean()
+        results.loc[2, 'Lift'] = results.loc[2, 'HR'] / results.loc[0, 'HR']
+        results.loc[3, 'Measure'] = 'Hit rate top 10%'
+        df_temp_10_perc = df_temp[0:int(0.1 * len(df_temp))]
+        results.loc[3, 'Population'] = int(0.1 * len(df_temp))
+        results.loc[3, 'HR'] = df_temp_10_perc[TARGET].mean()
+        results.loc[3, 'Lift'] = results.loc[3, 'HR'] / results.loc[0, 'HR']
+        print(results)
+        return results

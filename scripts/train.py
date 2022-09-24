@@ -5,6 +5,7 @@ from src.data_loader.data_loader import DataLoader
 from src.data_loader.data_preprocess import DataPreprocess
 from src.data_loader.feature_selection import FeatureSelection
 from src.data_utils.constants import *
+from src.ml_models.explainerdashboard import ExplainerDashboardCustom
 from src.data_utils.helpers import Serialization
 from src.ml_models.train_ml_model import TrainMLModel
 from sklearn.model_selection import RandomizedSearchCV
@@ -40,8 +41,13 @@ def train():
     print('Saved')
     tmm = TrainMLModel()
     tmm.load_data_for_model(merged)
-    a = tmm.fit(bayesian_optimisation=False, random_search=True)
+    a = tmm.fit(bayesian_optimisation=False, random_search=False)
     Serialization.save_state(tmm, "tmm_xgb_model", "data/trained_instances")
+    if not os.path.isfile("dashboard.yaml") and os.path.isfile("explainer.joblib"):
+        print("ExplainerDashboard calculated")
+        edc = ExplainerDashboardCustom()
+        edc.load_objects(merged, tmm.xgb_model)
+        edc.train_explainer_dashboard()
 
 
 if __name__ == "__main__":
