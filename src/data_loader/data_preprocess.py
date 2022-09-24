@@ -39,7 +39,9 @@ class DataPreprocess:
     def custom_shift(data, months):
         return data.groupby(NCODPERS)[IND_TJCR_FIN_ULT1].shift(months)
 
-    def extract_data_range(self, date_start, date_end, date_target, file_name_X, file_name_y):
+    def extract_data_range(
+        self, date_start, date_end, date_target, file_name_X, file_name_y
+    ):
         df_target_final = self.df_target[self.df_target[FECHA_DATO] == date_target]
         df_final = self.df
         df_final["date"] = pd.to_datetime(df_final[FECHA_DATO])
@@ -59,7 +61,9 @@ class DataPreprocess:
             df_target_final[NCODPERS].isin(df_final_final[NCODPERS].unique())
         ]
         if self.constant_variables is None:
-            self.constant_variables = df_final_final.columns[df_final_final.nunique() <= 1]
+            self.constant_variables = df_final_final.columns[
+                df_final_final.nunique() <= 1
+            ]
         df_final_final = df_final_final.drop(columns=list(self.constant_variables))
         Serialization.save_state(df_target_final, file_name_y, "data")
         Serialization.save_state(df_final_final, file_name_X, "data")

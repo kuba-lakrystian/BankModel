@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib as mpl
-mpl.use('TkAgg')
+
+mpl.use("TkAgg")
 import matplotlib.pyplot as plt
 from explainerdashboard import ClassifierExplainer, ExplainerDashboard
 from src.data_utils.helpers import Serialization
@@ -24,19 +25,13 @@ class ExplainerDashboardCustom:
         y_train = self.df["target"]
 
         explainer = ClassifierExplainer(self.xgb_model, X_train, y_train)
-        db = ExplainerDashboard(explainer, title="BankModel", whatif=False, shap_interaction=False,
-                                decision_trees=False)
+        db = ExplainerDashboard(
+            explainer,
+            title="BankModel",
+            whatif=False,
+            shap_interaction=False,
+            decision_trees=False,
+        )
         explainer.dump("explainer.joblib")
         db.to_yaml("dashboard.yaml", explainerfile="explainer.joblib")
-        print('ExplainerDashboard objects saved')
-
-
-
-
-
-
-
-
-
-
-
+        print("ExplainerDashboard objects saved")
