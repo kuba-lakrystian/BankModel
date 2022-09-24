@@ -32,5 +32,17 @@ TIPODOM = "tipodom"  # Address type
 COD_PROV = "cod_prov"  # Province code
 NOMPROV = "nomprov"  # Province name
 RENTA = "renta"  # Gross income
+SEGMENTO = "segmento"
 
 IND_TJCR_FIN_ULT1 = "ind_tjcr_fin_ult1"  # Credit card
+
+COLUMNS_TO_DROP = [
+    FECHA_DATO,
+    IND_NUEVO,
+    "sum_6m",
+    "sum_3m",
+    "min_6m",
+    "min_3m",
+    "mean_6m",
+    "mean_3m",
+]

@@ -10,10 +10,11 @@ from src.data_utils.helpers import Serialization
 from src.ml_models.train_ml_model import TrainMLModel
 from sklearn.model_selection import RandomizedSearchCV
 
+
 pd.set_option("mode.chained_assignment", None)
 
 
-def train():
+def train(feature_selection: bool = False):
     if (
         os.path.isfile("data/df_target_final_train.pickle")
         and os.path.isfile("data/df_final_final_train.pickle")
@@ -49,20 +50,25 @@ def train():
     print("Data saved")
     fs = FeatureSelection()
     fs.load_data_to_selection(data_target_train, data_training_train)
-    a = fs.convert_to_dummy()
+    a = fs.last_month_variables(data_training_train, train=True)
     b = fs.salary_preprocessing()
     fs.release_memory()
     fs.load_data_to_selection(data_target_test, data_training_test)
-    a2 = fs.convert_to_dummy()
-    b2 = fs.salary_preprocessing()
-    # Drop correlated variables
     merged_train = a.merge(b, how="inner", on=[NCODPERS]).merge(
         data_target_train, how="inner", on=[NCODPERS]
     )
+    if feature_selection is True:
+        fs.find_best_variables(merged_train)
+    merged_train = merged_train.drop(columns=COLUMNS_TO_DROP)
+    merged_train = fs.convert_to_dummy(merged_train)
+    fs.load_data_to_selection(data_target_test, data_training_test)
+    a2 = fs.last_month_variables(data_training_test, train=False)
+    b2 = fs.salary_preprocessing()
     merged_test = a2.merge(b2, how="inner", on=[NCODPERS]).merge(
         data_target_test, how="inner", on=[NCODPERS]
     )
-
+    merged_test = merged_test.drop(columns=COLUMNS_TO_DROP)
+    merged_test = fs.convert_to_dummy(merged_test)
     tmm = TrainMLModel()
     tmm.load_data_for_model(merged_train)
     a = tmm.fit(bayesian_optimisation=False, random_search=False)
@@ -78,4 +84,4 @@ def train():
 
 
 if __name__ == "__main__":
-    train()
+    train(feature_selection=False)

@@ -53,7 +53,7 @@ class TrainMLModel:
 
     def fit(self, bayesian_optimisation: bool = False, random_search: bool = False):
         X_train, X_test, y_train, y_test = train_test_split(
-            self.df.drop(columns=["target", FECHA_DATO, NCODPERS]),
+            self.df.drop(columns=["target", NCODPERS]),
             self.df["target"],
             test_size=0.3,
             train_size=0.7,
@@ -89,7 +89,7 @@ class TrainMLModel:
 
     def predict(self):
         print("results for out-of-sample")
-        X_train = self.df.drop(columns=["target", FECHA_DATO, NCODPERS])
+        X_train = self.df.drop(columns=["target", NCODPERS])
         y_train = self.df["target"]
         self.df["predict_proba"] = self.xgb_model.predict_proba(X_train)[:, 1]
         results = self.calculate_hit_rate_and_lift(self.df)
