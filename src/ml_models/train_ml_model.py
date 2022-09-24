@@ -5,6 +5,8 @@ import multiprocessing
 from hyperopt import STATUS_OK, Trials, fmin, hp, tpe
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import RandomizedSearchCV
+from sklearn.metrics import roc_auc_score, accuracy_score, f1_score, balanced_accuracy_score, precision_recall_curve, auc
+from sklearn.metrics.cluster import contingency_matrix
 
 from src.data_utils.constants import *
 
@@ -50,7 +52,8 @@ class TrainMLModel:
             self.xgb_model = xgb.XGBClassifier(n_jobs=multiprocessing.cpu_count())
         self.xgb_model.fit(X_train, y_train)
         self.df['predict_proba'] = self.predict(X_train)
-        self.calculate_hit_rate_and_lift()
+        results, cut_off = self.calculate_hit_rate_and_lift()
+        self.calculate_predictive_power(cut_off)
         return self.df
 
     def predict(self, X):
@@ -97,6 +100,26 @@ class TrainMLModel:
         print(rs_model.best_params_)
         return rs_model.best_params_
 
+    def calculate_predictive_power(self, cut_off: float = 0.5):
+        self.df['predict'] = np.where(self.df['predict_proba'] >= cut_off, 1, 0)
+        results = pd.DataFrame(columns=['Measure', 'Value'])
+        results.loc[0, 'Measure'] = 'ROC AUC'
+        results.loc[0, 'Value'] = roc_auc_score(self.df[TARGET], self.df['predict_proba'])
+        results.loc[1, 'Measure'] = 'Gini'
+        results.loc[1, 'Value'] = 2*results.loc[0, 'Value'] - 1
+        precision, recall, thresholds = precision_recall_curve(self.df[TARGET], self.df['predict_proba'])
+        results.loc[2, 'Measure'] = 'Precision-Recall AUC'
+        results.loc[2, 'Value'] = auc(recall, precision)
+        results.loc[3, 'Measure'] = 'Accuracy'
+        results.loc[3, 'Value'] = accuracy_score(self.df[TARGET], self.df['predict'])
+        results.loc[4, 'Measure'] = 'F1 Score'
+        results.loc[4, 'Value'] = f1_score(self.df[TARGET], self.df['predict'])
+        results.loc[5, 'Measure'] = 'Balanced accuracy'
+        results.loc[5, 'Value'] = balanced_accuracy_score(self.df[TARGET], self.df['predict'])
+        print(results)
+        print(contingency_matrix(self.df[TARGET], self.df['predict']))
+        return results
+
     def calculate_hit_rate_and_lift(self):
         results = pd.DataFrame(columns = ['Measure', 'Population', 'HR', 'Lift'])
         results.loc[0, 'Measure'] = 'Hit rate entire population'
@@ -119,4 +142,4 @@ class TrainMLModel:
         results.loc[3, 'HR'] = df_temp_10_perc[TARGET].mean()
         results.loc[3, 'Lift'] = results.loc[3, 'HR'] / results.loc[0, 'HR']
         print(results)
-        return results
+        return results, df_temp_25_perc['predict_proba'].min()

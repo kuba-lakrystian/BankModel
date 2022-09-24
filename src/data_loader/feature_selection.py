@@ -20,10 +20,11 @@ class FeatureSelection:
         self.df_target = data_target
 
     def convert_to_dummy(self):
-        self.encoder = OneHotEncoder(handle_unknown="ignore")
         df_individual = self.df[self.df[FECHA_DATO] == self.df[FECHA_DATO].max()]
         df_individual = df_individual[[IND_EMPLEADO, SEXO]]
-        self.encoder.fit(df_individual)
+        if self.encoder is None:
+            self.encoder = OneHotEncoder(handle_unknown="ignore")
+            self.encoder.fit(df_individual)
         df_transformed = pd.DataFrame(
             self.encoder.transform(df_individual).toarray(),
             columns=self.encoder.get_feature_names_out(),
@@ -78,3 +79,7 @@ class FeatureSelection:
 
     def prepare_general_variables(self):
         df_individual = self.df[self.df[FECHA_DATO] == self.df[FECHA_DATO].max()]
+
+    def release_memory(self):
+        self.df = None
+        self.df_target = None
