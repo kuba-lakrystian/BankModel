@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 
 from src.data_utils.constants import *
-from src.data_utils.helpers import CramerV
 from src.data_utils.iv import IV
 
 from sklearn.preprocessing import OneHotEncoder
@@ -81,7 +80,7 @@ class FeatureSelection:
         df_6m_agg.columns = [NCODPERS] + [
             str(col) + "_6m" for col in df_6m_agg.columns if col != NCODPERS
         ]
-        df_fin = df_3m_agg.merge(df_6m_agg, how="inner", on=[NCODPERS])
+        df_fin = df_3m_agg.merge(df_6m_agg, how=INNER, on=[NCODPERS])
         return df_fin
 
     def prepare_general_variables(self):

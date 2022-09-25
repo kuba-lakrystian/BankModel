@@ -1,13 +1,17 @@
-import pandas as pd
+VERSION = '1.0.0'
 
 DATA_PATH = "data"
 
+COERCE = 'coerce'
 DOT_STR = "."
 EMPTY_STR = ""
+INNER = 'inner'
 SLASH_STR = "/"
+UNDERSCORE_STR = "_"
 
+DATE = "DATE"
+INDEX = 'index'
 TARGET = "target"
-
 FECHA_DATO = "fecha_dato"  # Period ID
 NCODPERS = "ncodpers"  # Customer ID
 IND_EMPLEADO = "ind_empleado"  # Is it an employee: A active, B ex employed, F filial, N not employee, P passive
@@ -35,6 +39,11 @@ RENTA = "renta"  # Gross income
 SEGMENTO = "segmento"
 
 IND_TJCR_FIN_ULT1 = "ind_tjcr_fin_ult1"  # Credit card
+
+DATES_FOR_TRAIN_SET = ["2015-01-01", "2015-06-30", "2015-07-28"]
+DATES_FOR_TEST_SET = ["2015-08-01", "2016-01-30", "2016-02-28"]
+TRAIN_SET_FILE_NAMES = ['df_final_final_train', 'df_target_final_train']
+TEST_SET_FILE_NAMES = ['df_final_final_test', 'df_target_final_test']
 
 COLUMNS_TO_DROP = [
     FECHA_DATO,

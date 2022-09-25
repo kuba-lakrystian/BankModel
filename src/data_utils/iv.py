@@ -1,11 +1,9 @@
 import pandas as pd
 import numpy as np
-import pandas.core.algorithms as algos
 from pandas import Series
 import scipy.stats.stats as stats
 import re
 import traceback
-import string
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.feature_selection import RFE
