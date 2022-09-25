@@ -4,6 +4,8 @@ from src.data_utils.constants import *
 import h2o
 from h2o.automl import H2OAutoML
 
+SET_SEED = 42
+
 h2o.init()
 
 merged = Serialization.load_state("merged_data", "data")
