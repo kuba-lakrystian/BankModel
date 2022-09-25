@@ -2,29 +2,29 @@ VERSION = "1.0.0"
 
 # CONFIG FILE
 
-INPUT_SECTION = 'Input'
+INPUT_SECTION = "Input"
 DATA_PATH = "data_path"
-PRETRAINED_TRAIN = 'prepared_data_train'
-PRETRAINED_TRAIN_LABELS = 'prepared_data_train_labels'
-PRETRAINED_TEST = 'prepared_data_test'
-PRETRAINED_TEST_LABELS = 'prepared_data_test_labels'
-RAW_DATA_FILE = 'raw_data_file'
+PRETRAINED_TRAIN = "prepared_data_train"
+PRETRAINED_TRAIN_LABELS = "prepared_data_train_labels"
+PRETRAINED_TEST = "prepared_data_test"
+PRETRAINED_TEST_LABELS = "prepared_data_test_labels"
+RAW_DATA_FILE = "raw_data_file"
 MODEL_SECTION = "Model"
-MODEL_NAME = 'model_name'
+MODEL_NAME = "model_name"
 MODEL_PATH = "model_path"
-DASHBOARD_YML_NAME = 'dashboard_yml_name'
-DASHBOARD_JOBLIB_NAME = 'dashboard_joblib_name'
-PARAMETERS_SECTION = 'Parameters'
-FEATURE_SELECTION_PARAMETER = 'feature_selection'
-OPT_MODEL_PARAMETER = 'opt_model'
-GARBAGE_MODEL_PARAMETER = 'garbage_model'
+DASHBOARD_YML_NAME = "dashboard_yml_name"
+DASHBOARD_JOBLIB_NAME = "dashboard_joblib_name"
+PARAMETERS_SECTION = "Parameters"
+FEATURE_SELECTION_PARAMETER = "feature_selection"
+OPT_MODEL_PARAMETER = "opt_model"
+GARBAGE_MODEL_PARAMETER = "garbage_model"
 VALUES_SECTION = "Values"
-PERCENT_FOR_CONSTANT_VARIABLE_VALUE = 'percent_for_constant_variable'
-NUMBER_OF_SIGNIFICANT_CATEGORIES_VALUE = 'number_of_significant_categories'
-PERCENT_OF_SIGNIFICANT_CATEGORIES_VALUE = 'percent_of_significant_categories'
-VALID_IMPORTANCE_PERCENT_VALUE = 'valid_importance_percent'
-SET_SEED_VALUE = 'set_seed'
-CONFIG_FILE = 'config.ini'
+PERCENT_FOR_CONSTANT_VARIABLE_VALUE = "percent_for_constant_variable"
+NUMBER_OF_SIGNIFICANT_CATEGORIES_VALUE = "number_of_significant_categories"
+PERCENT_OF_SIGNIFICANT_CATEGORIES_VALUE = "percent_of_significant_categories"
+VALID_IMPORTANCE_PERCENT_VALUE = "valid_importance_percent"
+SET_SEED_VALUE = "set_seed"
+CONFIG_FILE = "config.ini"
 
 # GENERAL
 

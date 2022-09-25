@@ -26,18 +26,10 @@ def train():
     opt_model = config[PARAMETERS_SECTION][OPT_MODEL_PARAMETER]
     garbage_model = config[PARAMETERS_SECTION][GARBAGE_MODEL_PARAMETER]
     if (
-        os.path.isfile(
-            SLASH_STR.join([data_path, pretrained_train_labels])
-        )
-        and os.path.isfile(
-            SLASH_STR.join([data_path, pretrained_train])
-        )
-        and os.path.isfile(
-            SLASH_STR.join([data_path, pretrained_test_labels])
-        )
-        and os.path.isfile(
-            SLASH_STR.join([data_path, pretrained_test])
-        )
+        os.path.isfile(SLASH_STR.join([data_path, pretrained_train_labels]))
+        and os.path.isfile(SLASH_STR.join([data_path, pretrained_train]))
+        and os.path.isfile(SLASH_STR.join([data_path, pretrained_test_labels]))
+        and os.path.isfile(SLASH_STR.join([data_path, pretrained_test]))
     ):
         print("Loading pretrained data files")
         data_target_train = Serialization.load_state(pretrained_train_labels, data_path)

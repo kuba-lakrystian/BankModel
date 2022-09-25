@@ -157,9 +157,15 @@ class FeatureSelection:
         print(vif)
 
     def last_month_variables(self, config, df, train: bool = False):
-        percent_for_constant_variable = float(config[VALUES_SECTION][PERCENT_FOR_CONSTANT_VARIABLE_VALUE])
-        number_of_significant_categories = int(config[VALUES_SECTION][NUMBER_OF_SIGNIFICANT_CATEGORIES_VALUE])
-        percent_of_significant_categories = float(config[VALUES_SECTION][PERCENT_OF_SIGNIFICANT_CATEGORIES_VALUE])
+        percent_for_constant_variable = float(
+            config[VALUES_SECTION][PERCENT_FOR_CONSTANT_VARIABLE_VALUE]
+        )
+        number_of_significant_categories = int(
+            config[VALUES_SECTION][NUMBER_OF_SIGNIFICANT_CATEGORIES_VALUE]
+        )
+        percent_of_significant_categories = float(
+            config[VALUES_SECTION][PERCENT_OF_SIGNIFICANT_CATEGORIES_VALUE]
+        )
         df_individual = df[df[FECHA_DATO] == df[FECHA_DATO].max()]
         df_individual = df_individual[df_individual[IND_ACTIVIDAD_CLIENTE] == 1]
         df_individual = df_individual[
@@ -206,8 +212,12 @@ class FeatureSelection:
                 ]
         return df_individual
 
-    def prepare_methed_dataset(self, config, data_training, data_target, train: bool = False):
-        general_variables = self.last_month_variables(config, data_training, train=train)
+    def prepare_methed_dataset(
+        self, config, data_training, data_target, train: bool = False
+    ):
+        general_variables = self.last_month_variables(
+            config, data_training, train=train
+        )
         salary_variables = self.salary_preprocessing(data_training)
         activity_variables = self.prepare_product_activity_variables(data_training)
         merged = (
