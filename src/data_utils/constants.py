@@ -33,17 +33,18 @@ ANTIGUAEDAD = (
     "antiguedad"  # How many months it has been since joining the bank (if < 6, then 6)
 )
 INDREL = "indrel"
-
+ULT_FEC_CLI_1T = 'ult_fec_cli_1t'
 INDREL_1MES = "indrel_1mes"  # (First/Primary customer), 2 (co-owner ),P (Potential),3 (former primary), 4(former co-owner). At the beginning of a month
 TIPREL_1MES = "tiprel_1mes"  # Customer relation type at the beginning of the month, A (active), I (inactive), P (former customer),R (Potential)
 INDRESI = "indresi"  #
-
+INDEXT = "indext"
 CONYUEMP = "conyuemp"  # Spouse status
 CANAL_ENTRADA = "canal_entrada"  # Channel
 INDFALL = "indfall"  #
 TIPODOM = "tipodom"  # Address type
 COD_PROV = "cod_prov"  # Province code
 NOMPROV = "nomprov"  # Province name
+IND_ACTIVIDAD_CLIENTE = 'ind_actividad_cliente'
 RENTA = "renta"  # Gross income
 SEGMENTO = "segmento"
 
@@ -54,6 +55,35 @@ DATES_FOR_TEST_SET = ["2015-08-01", "2016-01-30", "2016-02-28"]
 TRAIN_SET_FILE_NAMES = ["df_final_final_train", "df_target_final_train"]
 TEST_SET_FILE_NAMES = ["df_final_final_test", "df_target_final_test"]
 
+# COLUMNS_TO_DROP = [
+#     FECHA_DATO,
+#     IND_NUEVO,
+#     "sum_6m",
+#     "sum_3m",
+#     "min_6m",
+#     "min_3m",
+#     "mean_6m",
+#     "mean_3m",
+#     'ind_ctpp_fin_ult1_max3m',
+#     'ind_dela_fin_ult1_max3m',
+#     'ind_ctop_fin_ult1_max3m',
+#     'ind_cco_fin_ult1_max3m',
+#     'ind_cco_fin_ult1_max3m',
+#     'ind_deco_fin_ult1_max3m',
+#     'ind_ahor_fin_ult1_max3m',
+#     'ind_cder_fin_ult1_max3m',
+#     'ind_ctju_fin_ult1_max3m',
+#     'ind_deme_fin_ult1_max3m',
+#     'ind_plan_fin_ult1_max3m',
+#     'ind_ctma_fin_ult1_max3m',
+#     'ind_pres_fin_ult1_max3m',
+#     'ind_viv_fin_ult1_max3m',
+#     'ind_hip_fin_ult1_max3m',
+#     'ind_valo_fin_ult1_max3m',
+#     'ind_fond_fin_ult1_max3m',
+#     'ind_aval_fin_ult1_max3m'
+# ]
+
 COLUMNS_TO_DROP = [
     FECHA_DATO,
     IND_NUEVO,
@@ -63,6 +93,28 @@ COLUMNS_TO_DROP = [
     "min_3m",
     "mean_6m",
     "mean_3m",
+    'ind_ctop_fin_ult1_max3m',
+    'ind_nom_pens_ult1_max3m',
+    'ind_ecue_fin_ult1_max3m',
+    'ind_cco_fin_ult1_max3m',
+    'ind_cco_fin_ult1_max3m',
+    'ind_ctpp_fin_ult1_max3m',
+    INDEXT,
+    'ind_ctma_fin_ult1_max3m',
+    CONYUEMP,
+    'ind_aval_fin_ult1_max3m',
+    'ind_ahor_fin_ult1_max3m',
+    'ind_cder_fin_ult1_max3m',
+    'ind_deme_fin_ult1_max3m',
+    'ind_dela_fin_ult1_max3m',
+    'ind_ctju_fin_ult1_max3m',
+    'ind_deco_fin_ult1_max3m',
+    'ind_viv_fin_ult1_max3m',
+    'ind_hip_fin_ult1_max3m',
+    'ind_plan_fin_ult1_max3m',
+    'ind_fond_fin_ult1_max3m',
+    'ind_valo_fin_ult1_max3m',
+    'ind_pres_fin_ult1_max3m'
 ]
 
 PERCENT_FOR_CONSTANT_VARIABLE = 0.99

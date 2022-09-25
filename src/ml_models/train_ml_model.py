@@ -72,6 +72,8 @@ class TrainMLModel:
         print(f"y_train distribution: {y_train.value_counts()}")
         if apply_smote:
             sm = SMOTE(random_state=42)
+            X_train_temp = X_train
+            y_train_temp = y_train
             X_train, y_train = sm.fit_resample(X_train, y_train)
             print(f"X_train size after SMOTE: {X_train.shape}")
             print(f"y_train distribution after SMOTE: {y_train.value_counts()}")
@@ -106,10 +108,12 @@ class TrainMLModel:
         xgb_fea_imp["_cumulated_importance_percent"] = xgb_fea_imp[
             "importance_percent"
         ].cumsum()
-        xgb_fea_imp["_cumulated_importance_percent"] <= 0.95
         chosen_variables = list(
             xgb_fea_imp[xgb_fea_imp["_cumulated_importance_percent"] <= 0.95]["feature"]
         ) + ["target", NCODPERS]
+        if apply_smote:
+            X_train = X_train_temp
+            y_train = y_train_temp
         X_train["predict_proba"] = self.xgb_model.predict_proba(X_train)[:, 1]
         X_train[TARGET] = y_train
         print("results for train")

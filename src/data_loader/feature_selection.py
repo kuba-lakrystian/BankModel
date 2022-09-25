@@ -65,6 +65,7 @@ class FeatureSelection:
             )
         ]
         df_xm = df_xm.drop(columns=[FECHA_DATO, PERIOD_ID])
+        df_xm = df_xm.fillna(0)
         df_xm_agg = df_xm.groupby(NCODPERS).agg(MAX).add_suffix("_max3m")
         df_xm_agg = df_xm_agg.reset_index()
         return df_xm_agg
@@ -94,17 +95,22 @@ class FeatureSelection:
     @staticmethod
     def find_best_variables(df):
         df = df.drop(columns=[FECHA_DATO, NCODPERS])
-        d = defaultdict(preprocessing.LabelEncoder)
-        fit = df.select_dtypes(include=[OBJECT]).apply(
-            lambda x: d[x.name].fit_transform(x)
-        )
-        for i in list(d.keys()):
-            df[i] = d[i].transform(df[i])
+        # d = defaultdict(preprocessing.LabelEncoder)
+        # fit = df.select_dtypes(include=[OBJECT]).apply(
+        #     lambda x: d[x.name].fit_transform(x)
+        # )
+        # for i in list(d.keys()):
+        #     df[i] = d[i].transform(df[i])
+
+        for i in df.select_dtypes(include=[OBJECT]).columns:
+            df[i] = df[i].astype('category').cat.codes + 1
+        # df.select_dtypes(include=[OBJECT]) = df.select_dtypes(include=[OBJECT]).apply(lambda x: x.astype('category').cat.codes)
 
         features = df[df.columns.difference([TARGET])]
         labels = df[TARGET]
 
         iv_class = IV()
+        print("Calculating IV")
         iv_wyn = iv_class.data_vars(df, df.target)
         print(iv_wyn)
 
@@ -152,6 +158,7 @@ class FeatureSelection:
 
     def last_month_variables(self, df, train: bool = False):
         df_individual = df[df[FECHA_DATO] == df[FECHA_DATO].max()]
+        df_individual = df_individual[df_individual[IND_ACTIVIDAD_CLIENTE] == 1]
         df_individual = df_individual[
             [
                 NCODPERS,
@@ -160,7 +167,14 @@ class FeatureSelection:
                 PAIS_RESIDENCIA,
                 AGE,
                 IND_NUEVO,
+                INDREL,
+                ULT_FEC_CLI_1T,
+                TIPREL_1MES,
+                INDRESI,
+                INDEXT,
+                CONYUEMP,
                 CANAL_ENTRADA,
+                INDFALL,
                 NOMPROV,
                 SEGMENTO,
             ]

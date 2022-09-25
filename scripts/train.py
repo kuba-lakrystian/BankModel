@@ -9,7 +9,7 @@ from src.data_utils.helpers import Serialization
 from src.ml_models.train_ml_model import TrainMLModel
 
 
-def train(feature_selection: bool = False, opt_model: bool = False):
+def train(feature_selection: bool = False, opt_model: bool = False, garbage_model:bool =False):
     if (
         os.path.isfile(
             SLASH_STR.join([DATA_PATH, DOT_STR.join([TRAIN_SET_FILE_NAMES[1], PICKLE])])
@@ -62,41 +62,55 @@ def train(feature_selection: bool = False, opt_model: bool = False):
             " COLUMNS_TO_DROP before you train final model"
         )
         return True
-    merged_train = fs.convert_to_dummy(merged_train, columns_to_drop=COLUMNS_TO_DROP)
+    merged_train_valid = fs.convert_to_dummy(merged_train, columns_to_drop=COLUMNS_TO_DROP)
     merged_test = fs.prepare_methed_dataset(
         data_training_test, data_target_test, train=False
     )
-    merged_test = fs.convert_to_dummy(merged_test, columns_to_drop=COLUMNS_TO_DROP)
+    merged_test_valid = fs.convert_to_dummy(merged_test, columns_to_drop=COLUMNS_TO_DROP)
     print("Training model")
     tmm = TrainMLModel()
-    tmm.load_data_for_model(merged_train)
+    tmm.load_data_for_model(merged_train_valid)
     a, variables_to_optimise = tmm.fit(
-        bayesian_optimisation=False, random_search=False, apply_smote=False
+        bayesian_optimisation=False, random_search=False, apply_smote=True
     )
     tmm.release_memory()
-    tmm.load_data_for_model(merged_test)
+    tmm.load_data_for_model(merged_test_valid)
     tmm.predict()
     Serialization.save_state(tmm, "tmm_xgb_model", "data/trained_instances")
     if opt_model:
-        merged_train = merged_train[variables_to_optimise]
-        merged_test = merged_test[variables_to_optimise]
+        merged_train_valid = merged_train_valid[variables_to_optimise]
+        merged_test_valid = merged_test_valid[variables_to_optimise]
         tmm_opt = TrainMLModel()
-        tmm_opt.load_data_for_model(merged_train)
+        tmm_opt.load_data_for_model(merged_train_valid)
         a, variables_to_optimise = tmm_opt.fit(
             bayesian_optimisation=False, random_search=False, apply_smote=False
         )
         tmm_opt.release_memory()
-        tmm_opt.load_data_for_model(merged_test)
+        tmm_opt.load_data_for_model(merged_test_valid)
         tmm_opt.predict()
     if not os.path.isfile("dashboard.yaml") and os.path.isfile("explainer.joblib"):
         print("ExplainerDashboard calculated")
         edc = ExplainerDashboardCustom()
         if opt_model:
-            edc.load_objects(merged_train, tmm_opt.xgb_model)
+            edc.load_objects(merged_train_valid, tmm_opt.xgb_model)
         else:
-            edc.load_objects(merged_train, tmm.xgb_model)
+            edc.load_objects(merged_train_valid, tmm.xgb_model)
         edc.train_explainer_dashboard()
+    if garbage_model:
+        print("Gargabe model")
+        fs_garbage = FeatureSelection()
+        proper_columns = [x for x in list(merged_train.columns) if x not in COLUMNS_TO_DROP and x != TARGET and x != NCODPERS] + [FECHA_DATO, CONYUEMP]
+        merged_train_garbage = fs_garbage.convert_to_dummy(merged_train, columns_to_drop=proper_columns)
+        merged_test_garbage = fs_garbage.convert_to_dummy(merged_test, columns_to_drop=proper_columns)
+        tmm_garbage = TrainMLModel()
+        tmm_garbage.load_data_for_model(merged_train_garbage)
+        a, variables_to_optimise = tmm_garbage.fit(
+            bayesian_optimisation=False, random_search=False, apply_smote=False
+        )
+        tmm_garbage.release_memory()
+        tmm_garbage.load_data_for_model(merged_test_garbage)
+        tmm_garbage.predict()
 
 
 if __name__ == "__main__":
-    train(feature_selection=True, opt_model=False)
+    train(feature_selection=False, opt_model=False, garbage_model=False)

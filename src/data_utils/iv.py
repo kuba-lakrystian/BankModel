@@ -41,7 +41,7 @@ class IV:
             n = force_bin
             # bins = algos.quantile(notmiss.X, np.linspace(0, 1, n))
             bins = notmiss.X.quantile(np.linspace(0, 1, n))
-            if len(np.unique(bins)) == 2:
+            if len(bins) == 2:
                 bins = np.insert(bins, 0, 1)
                 bins[1] = bins[1] - (bins[1] / 2)
             d1 = pd.DataFrame(
