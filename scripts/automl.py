@@ -17,7 +17,7 @@ x = x.remove(y)
 
 X_train_h2o[y] = X_train_h2o[y].asfactor()
 
-aml = H2OAutoML(max_models=5, seed=42)
+aml = H2OAutoML(max_models=5, seed=SET_SEED)
 aml.train(x=x, y=y, training_frame=X_train_h2o)
 
 lb = aml.leaderboard

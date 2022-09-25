@@ -1,15 +1,21 @@
 import pandas as pd
 
 from src.data_utils.constants import *
-from src.data_utils.iv import IV
+from src.data_utils.feature_selection_functions import FeatureSelectionFunctions
 
 from sklearn.preprocessing import OneHotEncoder
-from sklearn import preprocessing
-from collections import defaultdict
 from functools import reduce
 
 pd.set_option("mode.chained_assignment", None)
 
+CHI_SQUARE = "Chi_Square"
+FINAL_SCORE = "final_score"
+IV = "IV"
+EXTRATREES = "Extratrees"
+L1 = "L1"
+RFE = "RFE"
+
+CATEGORY = "category"
 CUMSUM_VAR = "cumsum_var"
 OTHER = "Other"
 
@@ -95,62 +101,56 @@ class FeatureSelection:
     @staticmethod
     def find_best_variables(df):
         df = df.drop(columns=[FECHA_DATO, NCODPERS])
-        # d = defaultdict(preprocessing.LabelEncoder)
-        # fit = df.select_dtypes(include=[OBJECT]).apply(
-        #     lambda x: d[x.name].fit_transform(x)
-        # )
-        # for i in list(d.keys()):
-        #     df[i] = d[i].transform(df[i])
-
         for i in df.select_dtypes(include=[OBJECT]).columns:
-            df[i] = df[i].astype('category').cat.codes + 1
-        # df.select_dtypes(include=[OBJECT]) = df.select_dtypes(include=[OBJECT]).apply(lambda x: x.astype('category').cat.codes)
+            df[i] = df[i].astype(CATEGORY).cat.codes + 1
 
         features = df[df.columns.difference([TARGET])]
         labels = df[TARGET]
 
-        iv_class = IV()
+        iv_class = FeatureSelectionFunctions()
         print("Calculating IV")
         iv_wyn = iv_class.data_vars(df, df.target)
         print(iv_wyn)
 
+        print("Calculating RFE")
         rfe_wyn = iv_class.rfe(features, labels)
         print(rfe_wyn)
 
+        print("Calculating Extratrees")
         vi_extratrees_wyn = iv_class.vi_extratrees(features, labels)
         print(vi_extratrees_wyn)
 
+        print("Calculating Chi square")
         chi_sq_wyn = iv_class.chi_sq(features, labels)
         print(chi_sq_wyn)
 
+        print("Calculating L1")
         l1_wyn = iv_class.l1(features, labels)
         print(l1_wyn)
 
         dfs = [iv_wyn, rfe_wyn, vi_extratrees_wyn, chi_sq_wyn, l1_wyn]
-        final_results = reduce(
-            lambda left, right: pd.merge(left, right, on="index"), dfs
-        )
+        final_results = reduce(lambda left, right: pd.merge(left, right, on=INDEX), dfs)
         print(final_results.head())
 
-        columns = ["IV", "Extratrees", "Chi_Square"]
+        columns = [IV, EXTRATREES, CHI_SQUARE]
 
         score_table = pd.DataFrame({}, [])
-        score_table["index"] = final_results["index"]
+        score_table[INDEX] = final_results[INDEX]
 
         for i in columns:
             score_table[i] = (
-                final_results["index"]
-                .isin(list(final_results.nlargest(5, i)["index"]))
+                final_results[INDEX]
+                .isin(list(final_results.nlargest(5, i)[INDEX]))
                 .astype(int)
             )
 
-        score_table["RFE"] = final_results["RFE"].astype(int)
-        score_table["L1"] = final_results["L1"].astype(int)
+        score_table[RFE] = final_results[RFE].astype(int)
+        score_table[L1] = final_results[L1].astype(int)
 
-        score_table["final_score"] = score_table.sum(axis=1)
+        score_table[FINAL_SCORE] = score_table.sum(axis=1)
 
         print("Importance: Final score:")
-        print(score_table.sort_values("final_score", ascending=0))
+        print(score_table.sort_values(FINAL_SCORE, ascending=0))
 
         vif = iv_class.calculate_vif(features)
         print("VIF:")

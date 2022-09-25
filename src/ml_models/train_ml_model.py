@@ -3,7 +3,6 @@ import pandas as pd
 import xgboost as xgb
 import multiprocessing
 from hyperopt import STATUS_OK, Trials, fmin, hp, tpe
-from sklearn.metrics import accuracy_score
 from sklearn.model_selection import RandomizedSearchCV
 from sklearn.metrics import (
     roc_auc_score,
@@ -40,10 +39,19 @@ params = {
     "colsample_bytree": [0.3, 0.4, 0.5, 0.7],
 }
 
+CUMULATED_IMPORTANCE_PERCENT = "cumulated_importance_percent"
+IMPORTANCE = "importance"
+IMPORTANCE_PERCENT = "importance_percent"
+FEATURE = "feature"
+HR = "HR"
+LIFT = "Lift"
+MEASURE = "Measure"
+POPULATION = "Population"
+VALUE = "Value"
+
 
 class TrainMLModel:
     def __init__(self):
-        self.df: pd.DataFrame = None
         self.xgb_model = None
         self.cut_off: float = None
         self.X_train: pd.DataFrame = None
@@ -51,27 +59,25 @@ class TrainMLModel:
         self.X_test: pd.DataFrame = None
         self.y_test: pd.DataFrame = None
 
-    def load_data_for_model(self, data):
-        self.df = data
-
     def fit(
         self,
+        df,
         bayesian_optimisation: bool = False,
         random_search: bool = False,
         apply_smote: bool = False,
     ):
         X_train, X_test, y_train, y_test = train_test_split(
-            self.df.drop(columns=["target", NCODPERS]),
-            self.df["target"],
+            df.drop(columns=[TARGET, NCODPERS]),
+            df[TARGET],
             test_size=0.3,
             train_size=0.7,
-            random_state=42,
-            stratify=self.df["target"],
+            random_state=SET_SEED,
+            stratify=df[TARGET],
         )
         print(f"X_train size: {X_train.shape}")
         print(f"y_train distribution: {y_train.value_counts()}")
         if apply_smote:
-            sm = SMOTE(random_state=42)
+            sm = SMOTE(random_state=SET_SEED)
             X_train_temp = X_train
             y_train_temp = y_train
             X_train, y_train = sm.fit_resample(X_train, y_train)
@@ -82,57 +88,58 @@ class TrainMLModel:
                 X_train, y_train, X_test, y_test
             )
             self.xgb_model = xgb.XGBClassifier(
-                random_state=42,
+                random_state=SET_SEED,
                 n_jobs=multiprocessing.cpu_count(),
                 **best_hyperparameters,
             )
         elif random_search:
             best_hyperparameters = self._train_random_search(X_train, y_train)
             self.xgb_model = xgb.XGBClassifier(
-                random_state=42,
+                random_state=SET_SEED,
                 n_jobs=multiprocessing.cpu_count(),
                 **best_hyperparameters,
             )
         else:
             self.xgb_model = xgb.XGBClassifier(
-                random_state=42, n_jobs=multiprocessing.cpu_count()
+                random_state=SET_SEED, n_jobs=multiprocessing.cpu_count()
             )
         self.xgb_model = self.xgb_model.fit(X_train, y_train)
         xgb_fea_imp = pd.DataFrame(
             list(self.xgb_model.get_booster().get_fscore().items()),
-            columns=["feature", "importance"],
-        ).sort_values("importance", ascending=False)
-        xgb_fea_imp["importance_percent"] = xgb_fea_imp["importance"] / sum(
-            xgb_fea_imp["importance"]
+            columns=[FEATURE, IMPORTANCE],
+        ).sort_values(IMPORTANCE, ascending=False)
+        xgb_fea_imp[IMPORTANCE_PERCENT] = xgb_fea_imp[IMPORTANCE] / sum(
+            xgb_fea_imp[IMPORTANCE]
         )
-        xgb_fea_imp["_cumulated_importance_percent"] = xgb_fea_imp[
-            "importance_percent"
+        xgb_fea_imp[CUMULATED_IMPORTANCE_PERCENT] = xgb_fea_imp[
+            IMPORTANCE_PERCENT
         ].cumsum()
         chosen_variables = list(
-            xgb_fea_imp[xgb_fea_imp["_cumulated_importance_percent"] <= 0.95]["feature"]
-        ) + ["target", NCODPERS]
+            xgb_fea_imp[
+                xgb_fea_imp[CUMULATED_IMPORTANCE_PERCENT] <= VALID_IMPORTANCE_PERCENT
+            ][FEATURE]
+        ) + [TARGET, NCODPERS]
         if apply_smote:
             X_train = X_train_temp
             y_train = y_train_temp
-        X_train["predict_proba"] = self.xgb_model.predict_proba(X_train)[:, 1]
+        X_train[PREDICT_PROBA] = self.xgb_model.predict_proba(X_train)[:, 1]
         X_train[TARGET] = y_train
-        print("results for train")
-        results_train = self.calculate_hit_rate_and_lift(X_train)
-        self.calculate_predictive_power(X_train)
-        X_test["predict_proba"] = self.xgb_model.predict_proba(X_test)[:, 1]
+        print("Results for train")
+        self._calculate_hit_rate_and_lift(X_train)
+        self._calculate_predictive_power(X_train)
+        X_test[PREDICT_PROBA] = self.xgb_model.predict_proba(X_test)[:, 1]
         X_test[TARGET] = y_test
-        print("results for test")
-        results_test = self.calculate_hit_rate_and_lift(X_test)
-        self.calculate_predictive_power(X_test)
-        return self.df, chosen_variables
+        print("Results for test")
+        self._calculate_hit_rate_and_lift(X_test)
+        self._calculate_predictive_power(X_test)
+        return chosen_variables
 
-    def predict(self):
-        print("results for out-of-sample")
-        X_train = self.df.drop(columns=["target", NCODPERS])
-        y_train = self.df["target"]
-        self.df["predict_proba"] = self.xgb_model.predict_proba(X_train)[:, 1]
-        results = self.calculate_hit_rate_and_lift(self.df)
-        self.calculate_predictive_power(self.df)
+    def predict(self, df):
+        print("Results for out-of-sample")
+        X_train = df.drop(columns=[TARGET, NCODPERS])
+        df[PREDICT_PROBA] = self.xgb_model.predict_proba(X_train)[:, 1]
+        self._calculate_hit_rate_and_lift(df)
+        self._calculate_predictive_power(df)
 
     def objective(self, space):
         clf = xgb.XGBClassifier(
@@ -173,16 +180,17 @@ class TrainMLModel:
             algo=tpe.suggest,
             max_evals=100,
             trials=trials,
-            rstate=np.random.default_rng(42),
+            rstate=np.random.default_rng(SET_SEED),
         )
         print(best_hyperparams)
+        self._release_memory()
         return best_hyperparams
 
     def _train_random_search(self, X, y):
         self.X_train = X
         self.y_train = y
 
-        classifier = xgb.XGBClassifier(random_state=42)
+        classifier = xgb.XGBClassifier(random_state=SET_SEED)
         rs_model = RandomizedSearchCV(
             classifier,
             param_distributions=params,
@@ -191,66 +199,65 @@ class TrainMLModel:
             n_jobs=-1,
             cv=5,
             verbose=3,
-            random_state=42,
+            random_state=SET_SEED,
         )
         rs_model.fit(self.X_train, self.y_train)
         print(rs_model.best_params_)
+        self._release_memory()
         return rs_model.best_params_
 
-    def calculate_predictive_power(self, df):
-        df["predict"] = np.where(df["predict_proba"] >= self.cut_off, 1, 0)
-        results = pd.DataFrame(columns=["Measure", "Value"])
-        results.loc[0, "Measure"] = "ROC AUC"
-        results.loc[0, "Value"] = roc_auc_score(df[TARGET], df["predict_proba"])
-        results.loc[1, "Measure"] = "Gini"
-        results.loc[1, "Value"] = 2 * results.loc[0, "Value"] - 1
+    def _calculate_predictive_power(self, df):
+        df[PREDICT] = np.where(df[PREDICT_PROBA] >= self.cut_off, 1, 0)
+        results = pd.DataFrame(columns=[MEASURE, VALUE])
+        results.loc[0, MEASURE] = "ROC AUC"
+        results.loc[0, VALUE] = roc_auc_score(df[TARGET], df[PREDICT_PROBA])
+        results.loc[1, MEASURE] = "Gini"
+        results.loc[1, VALUE] = 2 * results.loc[0, VALUE] - 1
         precision, recall, thresholds = precision_recall_curve(
-            df[TARGET], df["predict_proba"]
+            df[TARGET], df[PREDICT_PROBA]
         )
-        results.loc[2, "Measure"] = "Precision-Recall AUC"
-        results.loc[2, "Value"] = auc(recall, precision)
-        results.loc[3, "Measure"] = "Accuracy"
-        results.loc[3, "Value"] = accuracy_score(df[TARGET], df["predict"])
-        results.loc[4, "Measure"] = "F1 Score"
-        results.loc[4, "Value"] = f1_score(df[TARGET], df["predict"])
-        results.loc[5, "Measure"] = "Balanced accuracy"
-        results.loc[5, "Value"] = balanced_accuracy_score(df[TARGET], df["predict"])
-        results.loc[6, "Measure"] = "Precision"
-        results.loc[6, "Value"] = precision_score(df[TARGET], df["predict"])
-        results.loc[7, "Measure"] = "Recall"
-        results.loc[7, "Value"] = recall_score(df[TARGET], df["predict"])
+        results.loc[2, MEASURE] = "Precision-Recall AUC"
+        results.loc[2, VALUE] = auc(recall, precision)
+        results.loc[3, MEASURE] = "Accuracy"
+        results.loc[3, VALUE] = accuracy_score(df[TARGET], df[PREDICT])
+        results.loc[4, MEASURE] = "F1 Score"
+        results.loc[4, VALUE] = f1_score(df[TARGET], df[PREDICT])
+        results.loc[5, MEASURE] = "Balanced accuracy"
+        results.loc[5, VALUE] = balanced_accuracy_score(df[TARGET], df[PREDICT])
+        results.loc[6, MEASURE] = "Precision"
+        results.loc[6, VALUE] = precision_score(df[TARGET], df[PREDICT])
+        results.loc[7, MEASURE] = "Recall"
+        results.loc[7, VALUE] = recall_score(df[TARGET], df[PREDICT])
         print(results)
-        print(contingency_matrix(df[TARGET], df["predict"]))
+        print(contingency_matrix(df[TARGET], df[PREDICT]))
         return results
 
-    def calculate_hit_rate_and_lift(self, df):
-        results = pd.DataFrame(columns=["Measure", "Population", "HR", "Lift"])
-        results.loc[0, "Measure"] = "Hit rate entire population"
-        results.loc[0, "Population"] = len(df)
-        results.loc[0, "HR"] = df[TARGET].mean()
-        df_temp = df.sort_values("predict_proba", ascending=False)
-        results.loc[1, "Measure"] = "Hit rate top 2.5%"
+    def _calculate_hit_rate_and_lift(self, df):
+        results = pd.DataFrame(columns=[MEASURE, POPULATION, HR, LIFT])
+        results.loc[0, MEASURE] = "Hit rate entire population"
+        results.loc[0, POPULATION] = len(df)
+        results.loc[0, HR] = df[TARGET].mean()
+        df_temp = df.sort_values(PREDICT_PROBA, ascending=False)
+        results.loc[1, MEASURE] = "Hit rate top 2.5%"
         df_temp_25_perc = df_temp[0 : int(0.025 * len(df_temp))]
-        results.loc[1, "Population"] = int(0.025 * len(df_temp))
-        results.loc[1, "HR"] = df_temp_25_perc[TARGET].mean()
-        results.loc[1, "Lift"] = results.loc[1, "HR"] / results.loc[0, "HR"]
-        results.loc[2, "Measure"] = "Hit rate top 5%"
+        results.loc[1, POPULATION] = int(0.025 * len(df_temp))
+        results.loc[1, HR] = df_temp_25_perc[TARGET].mean()
+        results.loc[1, LIFT] = results.loc[1, HR] / results.loc[0, HR]
+        results.loc[2, MEASURE] = "Hit rate top 5%"
         df_temp_5_perc = df_temp[0 : int(0.05 * len(df_temp))]
-        results.loc[2, "Population"] = int(0.05 * len(df_temp))
-        results.loc[2, "HR"] = df_temp_5_perc[TARGET].mean()
-        results.loc[2, "Lift"] = results.loc[2, "HR"] / results.loc[0, "HR"]
-        results.loc[3, "Measure"] = "Hit rate top 10%"
+        results.loc[2, POPULATION] = int(0.05 * len(df_temp))
+        results.loc[2, HR] = df_temp_5_perc[TARGET].mean()
+        results.loc[2, LIFT] = results.loc[2, HR] / results.loc[0, HR]
+        results.loc[3, MEASURE] = "Hit rate top 10%"
         df_temp_10_perc = df_temp[0 : int(0.1 * len(df_temp))]
-        results.loc[3, "Population"] = int(0.1 * len(df_temp))
-        results.loc[3, "HR"] = df_temp_10_perc[TARGET].mean()
-        results.loc[3, "Lift"] = results.loc[3, "HR"] / results.loc[0, "HR"]
+        results.loc[3, POPULATION] = int(0.1 * len(df_temp))
+        results.loc[3, HR] = df_temp_10_perc[TARGET].mean()
+        results.loc[3, LIFT] = results.loc[3, HR] / results.loc[0, HR]
         print(results)
         if self.cut_off is None:
-            self.cut_off = df_temp_5_perc["predict_proba"].min()
-        return results
+            self.cut_off = df_temp_5_perc[PREDICT_PROBA].min()
 
-    def release_memory(self):
-        self.df = None
+    def _release_memory(self):
         self.X_train = None
         self.y_train = None
         self.X_test = None

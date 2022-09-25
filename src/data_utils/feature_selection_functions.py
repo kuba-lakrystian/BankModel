@@ -14,12 +14,15 @@ from sklearn.feature_selection import chi2
 from sklearn.svm import LinearSVC
 from sklearn.feature_selection import SelectFromModel
 from statsmodels.stats.outliers_influence import variance_inflation_factor
+from src.data_utils.constants import *
 
 max_bin = 20
 force_bin = 3
 
+FEATURES = "Features"
 
-class IV:
+
+class FeatureSelectionFunctions:
     @staticmethod
     def mono_bin(Y, X, n=max_bin):
         df1 = pd.DataFrame({"X": X, "Y": Y})
@@ -39,7 +42,6 @@ class IV:
 
         if len(d2) == 1:
             n = force_bin
-            # bins = algos.quantile(notmiss.X, np.linspace(0, 1, n))
             bins = notmiss.X.quantile(np.linspace(0, 1, n))
             if len(bins) == 2:
                 bins = np.insert(bins, 0, 1)
@@ -74,7 +76,7 @@ class IV:
         d3["DIST_EVENT"] = d3.EVENT / d3.sum().EVENT
         d3["DIST_NON_EVENT"] = d3.NONEVENT / d3.sum().NONEVENT
         d3["WOE"] = np.log(d3.DIST_EVENT / d3.DIST_NON_EVENT)
-        d3["IV"] = (d3.DIST_EVENT - d3.DIST_NON_EVENT) * np.log(
+        d3[IV] = (d3.DIST_EVENT - d3.DIST_NON_EVENT) * np.log(
             d3.DIST_EVENT / d3.DIST_NON_EVENT
         )
         d3["VAR_NAME"] = "VAR"
@@ -91,7 +93,7 @@ class IV:
                 "DIST_EVENT",
                 "DIST_NON_EVENT",
                 "WOE",
-                "IV",
+                IV,
             ]
         ]
         d3 = d3.replace([np.inf, -np.inf], 0)
@@ -126,7 +128,7 @@ class IV:
         d3["DIST_EVENT"] = d3.EVENT / d3.sum().EVENT
         d3["DIST_NON_EVENT"] = d3.NONEVENT / d3.sum().NONEVENT
         d3["WOE"] = np.log(d3.DIST_EVENT / d3.DIST_NON_EVENT)
-        d3["IV"] = (d3.DIST_EVENT - d3.DIST_NON_EVENT) * np.log(
+        d3[IV] = (d3.DIST_EVENT - d3.DIST_NON_EVENT) * np.log(
             d3.DIST_EVENT / d3.DIST_NON_EVENT
         )
         d3["VAR_NAME"] = "VAR"
@@ -143,7 +145,7 @@ class IV:
                 "DIST_EVENT",
                 "DIST_NON_EVENT",
                 "WOE",
-                "IV",
+                IV,
             ]
         ]
         d3 = d3.replace([np.inf, -np.inf], 0)
@@ -177,11 +179,11 @@ class IV:
                 else:
                     iv_df = iv_df.append(conv, ignore_index=True)
 
-        iv = pd.DataFrame({"IV": iv_df.groupby("VAR_NAME").IV.max()})
+        iv = pd.DataFrame({IV: iv_df.groupby("VAR_NAME").IV.max()})
         iv = iv.reset_index()
         iv = iv.rename(columns={"VAR_NAME": "index"})
-        iv.sort_values(["IV"], ascending=0)
-        return iv.sort_values(["IV"], ascending=0)
+        iv.sort_values([IV], ascending=0)
+        return iv.sort_values([IV], ascending=0)
 
     @staticmethod
     def vi(features, labels):
@@ -194,18 +196,18 @@ class IV:
         print(accuracy)
 
         vi = pd.DataFrame(
-            clf.feature_importances_, columns=["RF"], index=features.columns
+            clf.feature_importances_, columns=[RFE], index=features.columns
         )
         vi = vi.reset_index()
 
-        return vi.sort_values(["RF"], ascending=0)
+        return vi.sort_values([RFE], ascending=0)
 
     @staticmethod
     def rfe(features, labels):
         model = LogisticRegression()
         rfe = RFE(model, n_features_to_select=20)
-        fit = rfe.fit(features, labels)
-        selected = pd.DataFrame(rfe.support_, columns=["RFE"], index=features.columns)
+        rfe.fit(features, labels)
+        selected = pd.DataFrame(rfe.support_, columns=[RFE], index=features.columns)
         selected = selected.reset_index()
         return selected
 
@@ -214,34 +216,32 @@ class IV:
         model = ExtraTreesClassifier()
         model.fit(features, labels)
         fi = pd.DataFrame(
-            model.feature_importances_, columns=["Extratrees"], index=features.columns
+            model.feature_importances_, columns=[EXTRATREES], index=features.columns
         )
         fi = fi.reset_index()
-        return fi.sort_values(["Extratrees"], ascending=0)
+        return fi.sort_values([EXTRATREES], ascending=0)
 
     @staticmethod
     def chi_sq(features, labels):
         model = SelectKBest(score_func=chi2, k=5)
         fit = model.fit(features, labels)
-        chi_sq = pd.DataFrame(
-            fit.scores_, columns=["Chi_Square"], index=features.columns
-        )
+        chi_sq = pd.DataFrame(fit.scores_, columns=[CHI_SQUARE], index=features.columns)
         chi_sq = chi_sq.reset_index()
-        return chi_sq.sort_values("Chi_Square", ascending=0)
+        return chi_sq.sort_values(CHI_SQUARE, ascending=0)
 
     @staticmethod
     def l1(features, labels):
         lsvc = LinearSVC(C=0.01, penalty="l1", dual=False).fit(features, labels)
         model = SelectFromModel(lsvc, prefit=True)
-        l1 = pd.DataFrame(model.get_support(), columns=["L1"], index=features.columns)
+        l1 = pd.DataFrame(model.get_support(), columns=[L1], index=features.columns)
         l1 = l1.reset_index()
         return l1
 
     @staticmethod
     def calculate_vif(features):
         vif = pd.DataFrame()
-        vif["Features"] = features.columns
-        vif["VIF"] = [
+        vif[FEATURES] = features.columns
+        vif[VIF] = [
             variance_inflation_factor(features.values, i)
             for i in range(features.shape[1])
         ]
