@@ -71,7 +71,7 @@ def train(feature_selection: bool = False):
     merged_test = fs.convert_to_dummy(merged_test)
     tmm = TrainMLModel()
     tmm.load_data_for_model(merged_train)
-    a = tmm.fit(bayesian_optimisation=False, random_search=False)
+    a = tmm.fit(bayesian_optimisation=False, random_search=False, apply_smote=False)
     tmm.release_memory()
     tmm.load_data_for_model(merged_test)
     tmm.predict()
