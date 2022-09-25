@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 
 from src.data_utils.constants import *
@@ -11,22 +10,19 @@ from functools import reduce
 
 pd.set_option("mode.chained_assignment", None)
 
+CUMSUM_VAR = "cumsum_var"
+OTHER = "Other"
+
 
 class FeatureSelection:
     def __init__(self):
-        self.df: pd.DataFrame = None
-        self.df_target: pd.DataFrame = None
         self.encoder = None
         self.to_remove = None
         self.update_categorical = None
 
-    def load_data_to_selection(self, data_target, data_training):
-        self.df = data_training
-        self.df.index = list(self.df[NCODPERS])
-        self.df_target = data_target
-
-    def convert_to_dummy(self, df):
-        df_categorical = df.select_dtypes(include=["object"])
+    def convert_to_dummy(self, df, columns_to_drop):
+        df = df.drop(columns=columns_to_drop)
+        df_categorical = df.select_dtypes(include=[OBJECT])
         if self.encoder is None:
             self.encoder = OneHotEncoder(handle_unknown="ignore")
             self.encoder.fit(df_categorical)
@@ -38,76 +34,79 @@ class FeatureSelection:
         df_final = pd.concat([df, df_transformed], axis=1)
         return df_final
 
-    def salary_preprocessing(self):
-        df = self.df[[FECHA_DATO, NCODPERS, RENTA]]
+    @staticmethod
+    def prepare_aggregates_for_salary(df, months):
+        df_xm = df[
+            df[PERIOD_ID].isin(
+                list(range(df[PERIOD_ID].max() - months + 1, df[PERIOD_ID].max() + 1))
+            )
+        ]
+        df_xm_agg = (
+            df_xm.groupby(NCODPERS)[RENTA].agg([MIN, MAX, SUM, MEAN]).reset_index()
+        )
+        df_xm_agg.columns = [NCODPERS] + [
+            f"{str(col)}_{months}m" for col in df_xm_agg.columns if col != NCODPERS
+        ]
+        return df_xm_agg
+
+    @staticmethod
+    def prepare_product_activity_variables(df):
+        activity_columns = [
+            col for col in df.columns if "ult1" in col and col != IND_TJCR_FIN_ULT1
+        ]
+        df = df[[FECHA_DATO, NCODPERS] + activity_columns]
+        df[PERIOD_ID] = (
+            12 * pd.to_datetime(df[FECHA_DATO]).dt.year
+            + pd.to_datetime(df[FECHA_DATO]).dt.month
+        )
+        df_xm = df[
+            df[PERIOD_ID].isin(
+                list(range(df[PERIOD_ID].max() - 3 + 1, df[PERIOD_ID].max() + 1))
+            )
+        ]
+        df_xm = df_xm.drop(columns=[FECHA_DATO, PERIOD_ID])
+        df_xm_agg = df_xm.groupby(NCODPERS).agg(MAX).add_suffix("_max3m")
+        df_xm_agg = df_xm_agg.reset_index()
+        return df_xm_agg
+
+    def salary_preprocessing(self, data):
+        df = data[[FECHA_DATO, NCODPERS, RENTA]]
         no_of_nan = (
             df[RENTA]
             .isnull()
             .groupby(df[NCODPERS])
             .sum()
             .astype(int)
-            .reset_index(name="count")
+            .reset_index(name=COUNT)
         )
-        # The same values for every month
-        df = df[df[NCODPERS].isin(list(no_of_nan[no_of_nan["count"] <= 3][NCODPERS]))]
-        df["period_id"] = (
+
+        df = df[df[NCODPERS].isin(list(no_of_nan[no_of_nan[COUNT] <= 3][NCODPERS]))]
+        df[PERIOD_ID] = (
             12 * pd.to_datetime(df[FECHA_DATO]).dt.year
             + pd.to_datetime(df[FECHA_DATO]).dt.month
         )
-        df_3m = df[
-            df["period_id"].isin(
-                list(range(df["period_id"].max() - 2, df["period_id"].max()))
-            )
-        ]
-        df_3m_agg = (
-            df_3m.groupby(NCODPERS)[RENTA]
-            .agg(["min", "max", "sum", "mean"])
-            .reset_index()
-        )
-        df_6m = df[
-            df["period_id"].isin(
-                list(range(df["period_id"].max() - 5, df["period_id"].max()))
-            )
-        ]
-        df_6m_agg = (
-            df_6m.groupby(NCODPERS)[RENTA]
-            .agg(["min", "max", "sum", "mean"])
-            .reset_index()
-        )
-        df_3m_agg.columns = [NCODPERS] + [
-            str(col) + "_3m" for col in df_3m_agg.columns if col != NCODPERS
-        ]
-        df_6m_agg.columns = [NCODPERS] + [
-            str(col) + "_6m" for col in df_6m_agg.columns if col != NCODPERS
-        ]
+
+        df_3m_agg = self.prepare_aggregates_for_salary(df, 3)
+        df_6m_agg = self.prepare_aggregates_for_salary(df, 6)
         df_fin = df_3m_agg.merge(df_6m_agg, how=INNER, on=[NCODPERS])
         return df_fin
 
-    def prepare_general_variables(self):
-        df_individual = self.df[self.df[FECHA_DATO] == self.df[FECHA_DATO].max()]
-
-    def release_memory(self):
-        self.df = None
-        self.df_target = None
-
-    def find_best_variables(self, df):
+    @staticmethod
+    def find_best_variables(df):
         df = df.drop(columns=[FECHA_DATO, NCODPERS])
         d = defaultdict(preprocessing.LabelEncoder)
-        fit = df.select_dtypes(include=["object"]).apply(
+        fit = df.select_dtypes(include=[OBJECT]).apply(
             lambda x: d[x.name].fit_transform(x)
         )
         for i in list(d.keys()):
             df[i] = d[i].transform(df[i])
 
-        features = df[df.columns.difference(["target"])]
-        labels = df["target"]
+        features = df[df.columns.difference([TARGET])]
+        labels = df[TARGET]
 
         iv_class = IV()
         iv_wyn = iv_class.data_vars(df, df.target)
         print(iv_wyn)
-
-        # vi_wyn = iv_class.vi(features, labels)
-        # print(vi_wyn)
 
         rfe_wyn = iv_class.rfe(features, labels)
         print(rfe_wyn)
@@ -169,23 +168,34 @@ class FeatureSelection:
         if train:
             self.to_remove = list()
             self.update_categorical = {}
-            df_categorical = df_individual.select_dtypes(include=["object"])
+            df_categorical = df_individual.select_dtypes(include=[OBJECT])
             for i in df_categorical.columns:
                 count = df[i].value_counts(normalize=True).reset_index()
-                count["cumsum"] = count[i].cumsum()
-                if count.loc[0, "cumsum"] > 0.99:
+                count[CUMSUM_VAR] = count[i].cumsum()
+                if count.loc[0, CUMSUM_VAR] > PERCENT_FOR_CONSTANT_VARIABLE:
                     self.to_remove = self.to_remove + [i]
                     continue
-                if len(count) > 8:
-                    mask = count["cumsum"] <= 0.85
+                if len(count) > NUMBER_OF_SIGNIFICANT_CATEGORIES:
+                    mask = count[CUMSUM_VAR] <= PERCENT_OF_SIGNIFICANT_CATEGORIES
                     to_take = count[mask]
-                    self.update_categorical[i] = list(to_take["index"])
+                    self.update_categorical[i] = list(to_take[INDEX])
         if self.to_remove:
             df_individual = df_individual.drop(columns=self.to_remove)
         if self.update_categorical:
             for key in self.update_categorical:
                 df_individual[key] = [
-                    x if x in self.update_categorical[key] else "Other"
+                    x if x in self.update_categorical[key] else OTHER
                     for x in df_individual[key]
                 ]
         return df_individual
+
+    def prepare_methed_dataset(self, data_training, data_target, train: bool = False):
+        general_variables = self.last_month_variables(data_training, train=train)
+        salary_variables = self.salary_preprocessing(data_training)
+        activity_variables = self.prepare_product_activity_variables(data_training)
+        merged = (
+            general_variables.merge(salary_variables, how=INNER, on=[NCODPERS])
+            .merge(activity_variables, how=INNER, on=[NCODPERS])
+            .merge(data_target, how=INNER, on=[NCODPERS])
+        )
+        return merged

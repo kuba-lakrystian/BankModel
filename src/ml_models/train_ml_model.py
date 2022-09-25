@@ -96,12 +96,20 @@ class TrainMLModel:
                 random_state=42, n_jobs=multiprocessing.cpu_count()
             )
         self.xgb_model = self.xgb_model.fit(X_train, y_train)
-        xgb_fea_imp = pd.DataFrame(list(self.xgb_model.get_booster().get_fscore().items()),
-                                   columns=['feature', 'importance']).sort_values('importance', ascending=False)
-        xgb_fea_imp['importance_percent'] = xgb_fea_imp['importance'] / sum(xgb_fea_imp['importance'])
-        xgb_fea_imp['_cumulated_importance_percent'] = xgb_fea_imp['importance_percent'].cumsum()
-        xgb_fea_imp['_cumulated_importance_percent'] <= 0.95
-        chosen_variables = list(xgb_fea_imp[xgb_fea_imp['_cumulated_importance_percent'] <= 0.95]['feature']) + ["target", NCODPERS]
+        xgb_fea_imp = pd.DataFrame(
+            list(self.xgb_model.get_booster().get_fscore().items()),
+            columns=["feature", "importance"],
+        ).sort_values("importance", ascending=False)
+        xgb_fea_imp["importance_percent"] = xgb_fea_imp["importance"] / sum(
+            xgb_fea_imp["importance"]
+        )
+        xgb_fea_imp["_cumulated_importance_percent"] = xgb_fea_imp[
+            "importance_percent"
+        ].cumsum()
+        xgb_fea_imp["_cumulated_importance_percent"] <= 0.95
+        chosen_variables = list(
+            xgb_fea_imp[xgb_fea_imp["_cumulated_importance_percent"] <= 0.95]["feature"]
+        ) + ["target", NCODPERS]
         X_train["predict_proba"] = self.xgb_model.predict_proba(X_train)[:, 1]
         X_train[TARGET] = y_train
         print("results for train")

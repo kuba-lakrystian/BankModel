@@ -6,12 +6,12 @@ from src.data_utils.helpers import Serialization
 
 pd.set_option("mode.chained_assignment", None)
 
-AFTER = 'after'
-BEFORE = 'before'
-MO = 'mo'
-ONE = 'one'
-TWO = 'two'
-THREE = 'three'
+AFTER = "after"
+BEFORE = "before"
+MO = "mo"
+ONE = "one"
+TWO = "two"
+THREE = "three"
 
 
 class DataPreprocess:
@@ -25,10 +25,18 @@ class DataPreprocess:
 
     def prepare_target(self):
         df = self.df[[FECHA_DATO, NCODPERS, IND_TJCR_FIN_ULT1]]
-        df[UNDERSCORE_STR.join([IND_TJCR_FIN_ULT1, ONE, MO, BEFORE])] = self.custom_shift(df, 1)
-        df[UNDERSCORE_STR.join([IND_TJCR_FIN_ULT1, TWO, MO, BEFORE])] = self.custom_shift(df, 2)
-        df[UNDERSCORE_STR.join([IND_TJCR_FIN_ULT1, THREE, MO, BEFORE])] = self.custom_shift(df, 3)
-        df[UNDERSCORE_STR.join([IND_TJCR_FIN_ULT1, ONE, MO, AFTER])] = self.custom_shift(df, -1)
+        df[
+            UNDERSCORE_STR.join([IND_TJCR_FIN_ULT1, ONE, MO, BEFORE])
+        ] = self.custom_shift(df, 1)
+        df[
+            UNDERSCORE_STR.join([IND_TJCR_FIN_ULT1, TWO, MO, BEFORE])
+        ] = self.custom_shift(df, 2)
+        df[
+            UNDERSCORE_STR.join([IND_TJCR_FIN_ULT1, THREE, MO, BEFORE])
+        ] = self.custom_shift(df, 3)
+        df[
+            UNDERSCORE_STR.join([IND_TJCR_FIN_ULT1, ONE, MO, AFTER])
+        ] = self.custom_shift(df, -1)
 
         df[TARGET] = np.where(
             (df[UNDERSCORE_STR.join([IND_TJCR_FIN_ULT1, ONE, MO, BEFORE])] == 0)
@@ -56,13 +64,23 @@ class DataPreprocess:
         df_final[DATE] = pd.to_datetime(df_final[FECHA_DATO])
         mask = (df_final[DATE] > date_start) & (df_final[DATE] <= date_end)
         df_final_final = self.df[mask]
-        df_final_final = df_final_final[df_final_final[NCODPERS].isin(df_target_final[NCODPERS].unique())]
+        df_final_final = df_final_final[
+            df_final_final[NCODPERS].isin(df_target_final[NCODPERS].unique())
+        ]
         months_with_engagements = df_final_final[NCODPERS].value_counts().reset_index()
-        only_full_customers = list(months_with_engagements[months_with_engagements.ncodpers == 6][INDEX])
-        df_final_final = df_final_final[df_final_final[NCODPERS].isin(only_full_customers)]
-        df_target_final = df_target_final[df_target_final[NCODPERS].isin(df_final_final[NCODPERS].unique())]
+        only_full_customers = list(
+            months_with_engagements[months_with_engagements.ncodpers == 6][INDEX]
+        )
+        df_final_final = df_final_final[
+            df_final_final[NCODPERS].isin(only_full_customers)
+        ]
+        df_target_final = df_target_final[
+            df_target_final[NCODPERS].isin(df_final_final[NCODPERS].unique())
+        ]
         if self.constant_variables is None:
-            self.constant_variables = df_final_final.columns[df_final_final.nunique() <= 1]
+            self.constant_variables = df_final_final.columns[
+                df_final_final.nunique() <= 1
+            ]
         df_final_final = df_final_final.drop(columns=list(self.constant_variables))
         Serialization.save_state(df_target_final, file_name_y, DATA_PATH)
         Serialization.save_state(df_final_final, file_name_X, DATA_PATH)

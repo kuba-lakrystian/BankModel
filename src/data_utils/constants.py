@@ -1,17 +1,26 @@
-VERSION = '1.0.0'
+VERSION = "1.0.0"
 
 DATA_PATH = "data"
+PICKLE = "pickle"
 
-COERCE = 'coerce'
+COERCE = "coerce"
 DOT_STR = "."
 EMPTY_STR = ""
-INNER = 'inner'
+INNER = "inner"
 SLASH_STR = "/"
 UNDERSCORE_STR = "_"
 
+MIN = "min"
+MAX = "max"
+MEAN = "mean"
+SUM = "sum"
+
+COUNT = "count"
 DATE = "DATE"
-INDEX = 'index'
+INDEX = "index"
 TARGET = "target"
+OBJECT = "object"
+PERIOD_ID = "period_id"
 FECHA_DATO = "fecha_dato"  # Period ID
 NCODPERS = "ncodpers"  # Customer ID
 IND_EMPLEADO = "ind_empleado"  # Is it an employee: A active, B ex employed, F filial, N not employee, P passive
@@ -42,8 +51,8 @@ IND_TJCR_FIN_ULT1 = "ind_tjcr_fin_ult1"  # Credit card
 
 DATES_FOR_TRAIN_SET = ["2015-01-01", "2015-06-30", "2015-07-28"]
 DATES_FOR_TEST_SET = ["2015-08-01", "2016-01-30", "2016-02-28"]
-TRAIN_SET_FILE_NAMES = ['df_final_final_train', 'df_target_final_train']
-TEST_SET_FILE_NAMES = ['df_final_final_test', 'df_target_final_test']
+TRAIN_SET_FILE_NAMES = ["df_final_final_train", "df_target_final_train"]
+TEST_SET_FILE_NAMES = ["df_final_final_test", "df_target_final_test"]
 
 COLUMNS_TO_DROP = [
     FECHA_DATO,
@@ -55,3 +64,7 @@ COLUMNS_TO_DROP = [
     "mean_6m",
     "mean_3m",
 ]
+
+PERCENT_FOR_CONSTANT_VARIABLE = 0.99
+NUMBER_OF_SIGNIFICANT_CATEGORIES = 8
+PERCENT_OF_SIGNIFICANT_CATEGORIES = 0.85

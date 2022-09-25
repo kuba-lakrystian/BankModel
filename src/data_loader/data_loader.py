@@ -21,9 +21,13 @@ class DataLoader:
         )
 
         for i in [AGE, ANTIGUAEDAD, INDREL_1MES]:
-            self.data_train_raw[i] = pd.to_numeric(self.data_train_raw[i], errors=COERCE)
+            self.data_train_raw[i] = pd.to_numeric(
+                self.data_train_raw[i], errors=COERCE
+            )
 
-        constant_variables = self.data_train_raw.columns[self.data_train_raw.nunique() <= 1]
+        constant_variables = self.data_train_raw.columns[
+            self.data_train_raw.nunique() <= 1
+        ]
         self.data_train_raw = self.data_train_raw.drop(columns=list(constant_variables))
 
         return self.data_train_raw
