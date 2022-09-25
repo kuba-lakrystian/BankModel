@@ -14,7 +14,7 @@ from sklearn.model_selection import RandomizedSearchCV
 pd.set_option("mode.chained_assignment", None)
 
 
-def train(feature_selection: bool = False):
+def train(feature_selection: bool = False, opt_model: bool = False):
     if (
         os.path.isfile("data/df_target_final_train.pickle")
         and os.path.isfile("data/df_final_final_train.pickle")
@@ -71,17 +71,29 @@ def train(feature_selection: bool = False):
     merged_test = fs.convert_to_dummy(merged_test)
     tmm = TrainMLModel()
     tmm.load_data_for_model(merged_train)
-    a = tmm.fit(bayesian_optimisation=False, random_search=False, apply_smote=False)
+    a, variables_to_optimise = tmm.fit(bayesian_optimisation=False, random_search=False, apply_smote=False)
     tmm.release_memory()
     tmm.load_data_for_model(merged_test)
     tmm.predict()
     Serialization.save_state(tmm, "tmm_xgb_model", "data/trained_instances")
+    merged_train = merged_train[variables_to_optimise]
+    merged_test = merged_test[variables_to_optimise]
+    if opt_model:
+        tmm_opt = TrainMLModel()
+        tmm_opt.load_data_for_model(merged_train)
+        a, variables_to_optimise = tmm_opt.fit(bayesian_optimisation=False, random_search=False, apply_smote=False)
+        tmm_opt.release_memory()
+        tmm_opt.load_data_for_model(merged_test)
+        tmm_opt.predict()
     if not os.path.isfile("dashboard.yaml") and os.path.isfile("explainer.joblib"):
         print("ExplainerDashboard calculated")
         edc = ExplainerDashboardCustom()
-        edc.load_objects(merged_train, tmm.xgb_model)
+        if opt_model:
+            edc.load_objects(merged_train, tmm_opt.xgb_model)
+        else:
+            edc.load_objects(merged_train, tmm.xgb_model)
         edc.train_explainer_dashboard()
 
 
 if __name__ == "__main__":
-    train(feature_selection=False)
+    train(feature_selection=False, opt_model=True)
