@@ -39,6 +39,33 @@ params = {
     "colsample_bytree": [0.3, 0.4, 0.5, 0.7],
 }
 
+current_hyperparameters = {
+    "objective": "binary:logistic",
+    "base_score": 0.5,
+    "booster": "gbtree",
+    "colsample_bylevel": 1,
+    "colsample_bynode": 1,
+    "colsample_bytree": 1,
+    "gamma": 0,
+    "gpu_id": -1,
+    "interaction_constraints": "",
+    "learning_rate": 0.300000012,
+    "max_delta_step": 0,
+    "max_depth": 6,
+    "min_child_weight": 1,
+    "monotone_constraints": "()",
+    "n_jobs": 8,
+    "num_parallel_tree": 1,
+    "predictor": "auto",
+    "reg_alpha": 0,
+    "reg_lambda": 1,
+    "scale_pos_weight": 1,
+    "subsample": 1,
+    "tree_method": "exact",
+    "validate_parameters": 1,
+    "verbosity": None,
+}
+
 CUMULATED_IMPORTANCE_PERCENT = "cumulated_importance_percent"
 IMPORTANCE = "importance"
 IMPORTANCE_PERCENT = "importance_percent"
@@ -61,23 +88,28 @@ class TrainMLModel:
 
     def fit(
         self,
+        config,
         df,
         bayesian_optimisation: bool = False,
         random_search: bool = False,
         apply_smote: bool = False,
     ):
+        valid_importance_percent = float(
+            config[VALUES_SECTION][VALID_IMPORTANCE_PERCENT_VALUE]
+        )
+        set_seed = int(config[VALUES_SECTION][SET_SEED_VALUE])
         X_train, X_test, y_train, y_test = train_test_split(
             df.drop(columns=[TARGET, NCODPERS]),
             df[TARGET],
             test_size=0.3,
             train_size=0.7,
-            random_state=SET_SEED,
+            random_state=set_seed,
             stratify=df[TARGET],
         )
         print(f"X_train size: {X_train.shape}")
         print(f"y_train distribution: {y_train.value_counts()}")
         if apply_smote:
-            sm = SMOTE(random_state=SET_SEED)
+            sm = SMOTE(random_state=set_seed)
             X_train_temp = X_train
             y_train_temp = y_train
             X_train, y_train = sm.fit_resample(X_train, y_train)
@@ -88,20 +120,20 @@ class TrainMLModel:
                 X_train, y_train, X_test, y_test
             )
             self.xgb_model = xgb.XGBClassifier(
-                random_state=SET_SEED,
+                random_state=set_seed,
                 n_jobs=multiprocessing.cpu_count(),
                 **best_hyperparameters,
             )
         elif random_search:
             best_hyperparameters = self._train_random_search(X_train, y_train)
             self.xgb_model = xgb.XGBClassifier(
-                random_state=SET_SEED,
+                random_state=set_seed,
                 n_jobs=multiprocessing.cpu_count(),
                 **best_hyperparameters,
             )
         else:
             self.xgb_model = xgb.XGBClassifier(
-                random_state=SET_SEED, n_jobs=multiprocessing.cpu_count()
+                random_state=set_seed, **current_hyperparameters
             )
         self.xgb_model = self.xgb_model.fit(X_train, y_train)
         xgb_fea_imp = pd.DataFrame(
@@ -116,7 +148,7 @@ class TrainMLModel:
         ].cumsum()
         chosen_variables = list(
             xgb_fea_imp[
-                xgb_fea_imp[CUMULATED_IMPORTANCE_PERCENT] <= VALID_IMPORTANCE_PERCENT
+                xgb_fea_imp[CUMULATED_IMPORTANCE_PERCENT] <= valid_importance_percent
             ][FEATURE]
         ) + [TARGET, NCODPERS]
         if apply_smote:
@@ -180,7 +212,7 @@ class TrainMLModel:
             algo=tpe.suggest,
             max_evals=100,
             trials=trials,
-            rstate=np.random.default_rng(SET_SEED),
+            rstate=np.random.default_rng(set_seed),
         )
         print(best_hyperparams)
         self._release_memory()
@@ -190,7 +222,7 @@ class TrainMLModel:
         self.X_train = X
         self.y_train = y
 
-        classifier = xgb.XGBClassifier(random_state=SET_SEED)
+        classifier = xgb.XGBClassifier(random_state=set_seed)
         rs_model = RandomizedSearchCV(
             classifier,
             param_distributions=params,
@@ -199,7 +231,7 @@ class TrainMLModel:
             n_jobs=-1,
             cv=5,
             verbose=3,
-            random_state=SET_SEED,
+            random_state=set_seed,
         )
         rs_model.fit(self.X_train, self.y_train)
         print(rs_model.best_params_)

@@ -8,16 +8,17 @@ pd.set_option("mode.chained_assignment", None)
 class DataLoader:
     def __init__(self):
         self.data_train_raw = None
-        self.data_path = DATA_PATH
 
     @staticmethod
     def _load_files(data_path):
         data_loaded = pd.read_csv(data_path)
         return data_loaded
 
-    def train_load(self):
+    def train_load(self, config):
+        data_path = config[INPUT_SECTION][DATA_PATH]
+        raw_data_path = config[INPUT_SECTION][RAW_DATA_FILE]
         self.data_train_raw = self._load_files(
-            EMPTY_STR.join([DATA_PATH, "/data_recommendation_engine/train_ver2.csv"])
+            EMPTY_STR.join([data_path, raw_data_path])
         )
 
         for i in [AGE, ANTIGUAEDAD, INDREL_1MES]:

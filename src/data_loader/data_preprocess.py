@@ -1,3 +1,4 @@
+import configparser
 import numpy as np
 import pandas as pd
 
@@ -19,9 +20,11 @@ class DataPreprocess:
         self.df: pd.DataFrame = None
         self.df_target: pd.DataFrame = None
         self.constant_variables = None
+        self.config = None
 
-    def load_data(self, data):
+    def load_data(self, config, data):
         self.df = data
+        self.config = config
 
     def prepare_target(self):
         df = self.df[[FECHA_DATO, NCODPERS, IND_TJCR_FIN_ULT1]]
@@ -53,12 +56,13 @@ class DataPreprocess:
     def custom_shift(data, months):
         return data.groupby(NCODPERS)[IND_TJCR_FIN_ULT1].shift(months)
 
-    def extract_data_range(self, dates, files):
+    def extract_data_range(self, dates, file_data, file_labels):
+        data_path = self.config[INPUT_SECTION][DATA_PATH]
         date_start = dates[0]
         date_end = dates[1]
         date_target = dates[2]
-        file_name_X = files[0]
-        file_name_y = files[1]
+        file_name_X = file_data
+        file_name_y = file_labels
         df_target_final = self.df_target[self.df_target[FECHA_DATO] == date_target]
         df_final = self.df
         df_final[DATE] = pd.to_datetime(df_final[FECHA_DATO])
@@ -82,8 +86,8 @@ class DataPreprocess:
                 df_final_final.nunique() <= 1
             ]
         df_final_final = df_final_final.drop(columns=list(self.constant_variables))
-        Serialization.save_state(df_target_final, file_name_y, DATA_PATH)
-        Serialization.save_state(df_final_final, file_name_X, DATA_PATH)
+        Serialization.save_state(df_target_final, file_name_y, data_path)
+        Serialization.save_state(df_final_final, file_name_X, data_path)
         return df_target_final, df_final_final
 
     def release_memory(self):
