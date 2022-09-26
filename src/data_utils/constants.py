@@ -58,33 +58,31 @@ OBJECT = "object"
 PERIOD_ID = "period_id"
 PREDICT = "predict"
 PREDICT_PROBA = "predict_proba"
-FECHA_DATO = "fecha_dato"  # Period ID
-NCODPERS = "ncodpers"  # Customer ID
-IND_EMPLEADO = "ind_empleado"  # Is it an employee: A active, B ex employed, F filial, N not employee, P passive
-PAIS_RESIDENCIA = "pais_residencia"  # Citizenship
-SEXO = "sexo"  # Gender
-AGE = "age"  # Age
-FECHA_ALTA = "fecha_alta"  # First day of a customer in the bank
-IND_NUEVO = "ind_nuevo"  # New customer
-ANTIGUAEDAD = (
-    "antiguedad"  # How many months it has been since joining the bank (if < 6, then 6)
-)
+FECHA_DATO = "fecha_dato"
+NCODPERS = "ncodpers"
+IND_EMPLEADO = "ind_empleado"
+PAIS_RESIDENCIA = "pais_residencia"
+SEXO = "sexo"
+AGE = "age"
+FECHA_ALTA = "fecha_alta"
+IND_NUEVO = "ind_nuevo"
+ANTIGUAEDAD = "antiguedad"
 INDREL = "indrel"
 ULT_FEC_CLI_1T = "ult_fec_cli_1t"
-INDREL_1MES = "indrel_1mes"  # (First/Primary customer), 2 (co-owner ),P (Potential),3 (former primary), 4(former co-owner). At the beginning of a month
-TIPREL_1MES = "tiprel_1mes"  # Customer relation type at the beginning of the month, A (active), I (inactive), P (former customer),R (Potential)
+INDREL_1MES = "indrel_1mes"
+TIPREL_1MES = "tiprel_1mes"
 INDRESI = "indresi"  #
 INDEXT = "indext"
-CONYUEMP = "conyuemp"  # Spouse status
-CANAL_ENTRADA = "canal_entrada"  # Channel
-INDFALL = "indfall"  #
-TIPODOM = "tipodom"  # Address type
-COD_PROV = "cod_prov"  # Province code
-NOMPROV = "nomprov"  # Province name
+CONYUEMP = "conyuemp"
+CANAL_ENTRADA = "canal_entrada"
+INDFALL = "indfall"
+TIPODOM = "tipodom"
+COD_PROV = "cod_prov"
+NOMPROV = "nomprov"
 IND_ACTIVIDAD_CLIENTE = "ind_actividad_cliente"
-RENTA = "renta"  # Gross income
+RENTA = "renta"
 SEGMENTO = "segmento"
-IND_TJCR_FIN_ULT1 = "ind_tjcr_fin_ult1"  # Credit card
+IND_TJCR_FIN_ULT1 = "ind_tjcr_fin_ult1"
 
 # DATES FOR TRAIN AND TEST SETS
 

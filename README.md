@@ -9,6 +9,8 @@ The dataset can be downloaded from [here](https://www.kaggle.com/competitions/sa
 
 To format the code, **black** library was used.
 
+IMPORTANT NOTICE: IV is calculated based on the code from this [source](https://github.com/Sundar0989/Variable-Selection-Using-Python/blob/master/Variable%20Selection%20using%20Python%20-%20Vote%20based%20approach.ipynb)
+
 **Target definition**:
 
 In a particular month (denoted as t) as a success ("1") we mark a customer who did not have a credit card three months before month t (it means, did not have a credit card in months t-3, t-2 and t-1), and have a credit card in a month t and one more month (t+1).
