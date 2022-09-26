@@ -230,7 +230,7 @@ class TrainMLModel:
             classifier,
             param_distributions=params,
             n_iter=5,
-            scoring="roc_auc",
+            scoring="average_precision",
             n_jobs=-1,
             cv=5,
             verbose=3,

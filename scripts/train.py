@@ -81,8 +81,8 @@ def train():
     variables_to_optimise = tmm.fit(
         config,
         merged_train_valid,
-        bayesian_optimisation=True,
-        random_search=False,
+        bayesian_optimisation=False,
+        random_search=True,
         apply_smote=False,
     )
     tmm.predict(merged_test_valid)
