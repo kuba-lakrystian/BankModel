@@ -98,7 +98,7 @@ def train():
     variables_to_optimise = tmm.fit(
         config,
         merged_train_valid,
-        bayesian_optimisation=True,
+        bayesian_optimisation=False,
         random_search=False,
         apply_smote=False,
     )
@@ -108,6 +108,7 @@ def train():
     if opt_model is True:
         merged_train_valid = merged_train_valid[variables_to_optimise]
         merged_test_valid = merged_test_valid[variables_to_optimise]
+        merged_oot_valid = merged_oot_valid[variables_to_optimise]
         tmm_opt = TrainMLModel()
         tmm_opt.fit(
             config,
@@ -117,6 +118,7 @@ def train():
             apply_smote=False,
         )
         tmm_opt.predict(merged_test_valid)
+        tmm_opt.predict(merged_oot_valid)
     if not os.path.isfile(dashboard_yml_file) and os.path.isfile(dashboard_joblib_file):
         print("ExplainerDashboard calculated")
         edc = ExplainerDashboardCustom()
@@ -132,12 +134,15 @@ def train():
             x
             for x in list(merged_train.columns)
             if x not in COLUMNS_TO_DROP and x != TARGET and x != NCODPERS
-        ] + [FECHA_DATO, CONYUEMP]
+        ] + [FECHA_DATO, CONYUEMP, SUM_6M, SUM_3M, MIN_3M, MIN_6M, MEAN_3M, MEAN_6M]
         merged_train_garbage = fs_garbage.convert_to_dummy(
             merged_train, columns_to_drop=proper_columns
         )
         merged_test_garbage = fs_garbage.convert_to_dummy(
             merged_test, columns_to_drop=proper_columns
+        )
+        merged_oot_garbage = fs_garbage.convert_to_dummy(
+            merged_oot, columns_to_drop=proper_columns
         )
         tmm_garbage = TrainMLModel()
         tmm_garbage.fit(
@@ -148,6 +153,7 @@ def train():
             apply_smote=False,
         )
         tmm_garbage.predict(merged_test_garbage)
+        tmm_garbage.predict(merged_oot_garbage)
 
 
 if __name__ == "__main__":

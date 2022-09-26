@@ -83,6 +83,12 @@ IND_ACTIVIDAD_CLIENTE = "ind_actividad_cliente"
 RENTA = "renta"
 SEGMENTO = "segmento"
 IND_TJCR_FIN_ULT1 = "ind_tjcr_fin_ult1"
+SUM_6M = "sum_6m"
+SUM_3M = "sum_3m"
+MIN_6M = "min_6m"
+MIN_3M = "min_3m"
+MEAN_6M = "mean_6m"
+MEAN_3M = "mean_3m"
 
 # DATES FOR TRAIN AND TEST SETS
 
@@ -101,26 +107,18 @@ COLUMNS_TO_DROP = [
     "min_3m",
     "mean_6m",
     "mean_3m",
-    "ind_ctop_fin_ult1_max3m",
-    "ind_nom_pens_ult1_max3m",
-    "ind_ecue_fin_ult1_max3m",
-    "ind_cco_fin_ult1_max3m",
-    "ind_cco_fin_ult1_max3m",
-    "ind_ctpp_fin_ult1_max3m",
-    INDEXT,
     "ind_ctma_fin_ult1_max3m",
     CONYUEMP,
     "ind_aval_fin_ult1_max3m",
     "ind_ahor_fin_ult1_max3m",
     "ind_cder_fin_ult1_max3m",
     "ind_deme_fin_ult1_max3m",
-    "ind_dela_fin_ult1_max3m",
     "ind_ctju_fin_ult1_max3m",
     "ind_deco_fin_ult1_max3m",
     "ind_viv_fin_ult1_max3m",
     "ind_hip_fin_ult1_max3m",
     "ind_plan_fin_ult1_max3m",
-    "ind_fond_fin_ult1_max3m",
-    "ind_valo_fin_ult1_max3m",
     "ind_pres_fin_ult1_max3m",
+    "ult_fec_cli_1t",
+    NOMPROV
 ]

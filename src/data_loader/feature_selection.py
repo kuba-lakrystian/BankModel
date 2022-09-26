@@ -139,7 +139,7 @@ class FeatureSelection:
         for i in columns:
             score_table[i] = (
                 final_results[INDEX]
-                .isin(list(final_results.nlargest(5, i)[INDEX]))
+                .isin(list(final_results.nlargest(20, i)[INDEX]))
                 .astype(int)
             )
 
