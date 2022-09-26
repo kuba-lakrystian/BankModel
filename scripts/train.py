@@ -1,12 +1,12 @@
-import os.path
 import configparser
+import os.path
 
 from src.data_loader.data_loader import DataLoader
 from src.data_loader.data_preprocess import DataPreprocess
 from src.data_loader.feature_selection import FeatureSelection
+from src.data_utils.helpers import Serialization
 from src.data_utils.constants import *
 from src.ml_models.explainerdashboard import ExplainerDashboardCustom
-from src.data_utils.helpers import Serialization
 from src.ml_models.train_ml_model import TrainMLModel
 
 
@@ -24,9 +24,13 @@ def train():
     model_name = config[MODEL_SECTION][MODEL_NAME]
     dashboard_yml_file = config[MODEL_SECTION][DASHBOARD_YML_NAME]
     dashboard_joblib_file = config[MODEL_SECTION][DASHBOARD_JOBLIB_NAME]
-    feature_selection: bool = config[PARAMETERS_SECTION][FEATURE_SELECTION_PARAMETER] == TRUE_STR
+    feature_selection: bool = (
+        config[PARAMETERS_SECTION][FEATURE_SELECTION_PARAMETER] == TRUE_STR
+    )
     opt_model: bool = config[PARAMETERS_SECTION][OPT_MODEL_PARAMETER] == TRUE_STR
-    garbage_model: bool = config[PARAMETERS_SECTION][GARBAGE_MODEL_PARAMETER] == TRUE_STR
+    garbage_model: bool = (
+        config[PARAMETERS_SECTION][GARBAGE_MODEL_PARAMETER] == TRUE_STR
+    )
     if (
         os.path.isfile(SLASH_STR.join([data_path, pretrained_train_labels]))
         and os.path.isfile(SLASH_STR.join([data_path, pretrained_train]))
@@ -88,9 +92,7 @@ def train():
     merged_oot = fs.prepare_methed_dataset(
         config, data_training_oot, data_target_oot, train=False
     )
-    merged_oot_valid = fs.convert_to_dummy(
-        merged_oot, columns_to_drop=COLUMNS_TO_DROP
-    )
+    merged_oot_valid = fs.convert_to_dummy(merged_oot, columns_to_drop=COLUMNS_TO_DROP)
     print("Training model")
     tmm = TrainMLModel()
     variables_to_optimise = tmm.fit(

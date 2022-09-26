@@ -7,6 +7,8 @@ In order to find the best approach, H2O AutoML can be launched - dedicated imple
 
 The dataset can be downloaded from [here](https://www.kaggle.com/competitions/santander-product-recommendation/data) - "train_ver2.csv.zip"
 
+To format the code, **black** library was used.
+
 **Target definition**:
 
 In a particular month (denoted as t) as a success ("1") we mark a customer who did not have a credit card three months before month t (it means, did not have a credit card in months t-3, t-2 and t-1), and have a credit card in a month t and one more month (t+1).
@@ -39,7 +41,11 @@ You can use only one method at the same time. It means, if **bayesian_optimisati
 
 **Output**
 
-As a result, xgb_model is serialized and saved in **data/trained_instances** folder.
+As a result, xgb_model is serialized and saved in **data/trained_instances** folder. Moreover, files required for ExplainerDashboard for related model are saved in the project path.
+
+If you want to run ExplainerDashboard for the model, in **terminal** in your repo, run the code:
+
+explainerdashboard run dashboard.yaml
 
 Besides, in the console, you can see measures printed for train, test and OOT samples:
 

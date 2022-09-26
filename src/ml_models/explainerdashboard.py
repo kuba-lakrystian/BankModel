@@ -1,13 +1,10 @@
+from explainerdashboard import ClassifierExplainer, ExplainerDashboard
 import pandas as pd
 import matplotlib as mpl
 
-mpl.use("TkAgg")
-import matplotlib.pyplot as plt
-from explainerdashboard import ClassifierExplainer, ExplainerDashboard
 from src.data_utils.constants import *
 
-# #db.run()
-# #explainerdashboard run dashboard.yaml inside virtualenv(in pycharm)
+mpl.use("TkAgg")
 
 DASHBOARD_NAME = "BankModel"
 

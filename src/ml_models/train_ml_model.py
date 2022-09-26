@@ -197,9 +197,7 @@ class TrainMLModel:
         )
 
         pred = clf.predict(self.X_test)
-        precision, recall, thresholds = precision_recall_curve(
-            self.y_test, pred
-        )
+        precision, recall, thresholds = precision_recall_curve(self.y_test, pred)
         pr_auc = auc(recall, precision)
         print("SCORE:", pr_auc)
         return {"loss": pr_auc, "status": STATUS_OK}
