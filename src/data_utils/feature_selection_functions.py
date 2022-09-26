@@ -186,28 +186,11 @@ class FeatureSelectionFunctions:
         return iv.sort_values([IV], ascending=0)
 
     @staticmethod
-    def vi(features, labels):
-        clf = RandomForestClassifier()
-        clf.fit(features, labels)
-
-        preds = clf.predict(features)
-
-        accuracy = accuracy_score(preds, labels)
-        print(accuracy)
-
-        vi = pd.DataFrame(
-            clf.feature_importances_, columns=[RFE], index=features.columns
-        )
-        vi = vi.reset_index()
-
-        return vi.sort_values([RFE], ascending=0)
-
-    @staticmethod
     def rfe(features, labels):
         model = LogisticRegression()
         rfe = RFE(model, n_features_to_select=20)
         rfe.fit(features, labels)
-        selected = pd.DataFrame(rfe.support_, columns=[RFE], index=features.columns)
+        selected = pd.DataFrame(rfe.support_, columns=[RFE_VALUE], index=features.columns)
         selected = selected.reset_index()
         return selected
 
