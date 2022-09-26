@@ -8,6 +8,8 @@ PRETRAINED_TRAIN = "prepared_data_train"
 PRETRAINED_TRAIN_LABELS = "prepared_data_train_labels"
 PRETRAINED_TEST = "prepared_data_test"
 PRETRAINED_TEST_LABELS = "prepared_data_test_labels"
+PRETRAINED_OOT = "prepared_data_oot"
+PRETRAINED_OOT_LABELS = "prepared_data_oot_labels"
 RAW_DATA_FILE = "raw_data_file"
 MODEL_SECTION = "Model"
 MODEL_NAME = "model_name"
@@ -88,6 +90,7 @@ IND_TJCR_FIN_ULT1 = "ind_tjcr_fin_ult1"  # Credit card
 
 DATES_FOR_TRAIN_SET = ["2015-01-01", "2015-06-30", "2015-07-28"]
 DATES_FOR_TEST_SET = ["2015-08-01", "2016-01-30", "2016-02-28"]
+DATES_FOR_OOT_SET = ["2015-10-01", "2016-03-30", "2016-04-28"]
 
 # REDUNDANT VARIABLES
 

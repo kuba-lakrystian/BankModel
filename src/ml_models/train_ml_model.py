@@ -73,6 +73,8 @@ FEATURE = "feature"
 HR = "HR"
 LIFT = "Lift"
 MEASURE = "Measure"
+MEASURE_FOR_BAYESIAN_OPT = "aucpr"
+MEASURE_FOR_RANDOM_SEARCH = "average_precision"
 POPULATION = "Population"
 VALUE = "Value"
 
@@ -189,7 +191,7 @@ class TrainMLModel:
             self.X_train,
             self.y_train,
             eval_set=evaluation,
-            eval_metric="aucpr",
+            eval_metric=MEASURE_FOR_BAYESIAN_OPT,
             early_stopping_rounds=10,
             verbose=False,
         )
@@ -230,7 +232,7 @@ class TrainMLModel:
             classifier,
             param_distributions=params,
             n_iter=5,
-            scoring="roc_auc",
+            scoring=MEASURE_FOR_RANDOM_SEARCH,
             n_jobs=-1,
             cv=5,
             verbose=3,
