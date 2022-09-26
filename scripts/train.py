@@ -22,9 +22,9 @@ def train():
     model_name = config[MODEL_SECTION][MODEL_NAME]
     dashboard_yml_file = config[MODEL_SECTION][DASHBOARD_YML_NAME]
     dashboard_joblib_file = config[MODEL_SECTION][DASHBOARD_JOBLIB_NAME]
-    feature_selection = config[PARAMETERS_SECTION][FEATURE_SELECTION_PARAMETER]
-    opt_model = config[PARAMETERS_SECTION][OPT_MODEL_PARAMETER]
-    garbage_model = config[PARAMETERS_SECTION][GARBAGE_MODEL_PARAMETER]
+    feature_selection: bool = config[PARAMETERS_SECTION][FEATURE_SELECTION_PARAMETER] == TRUE_STR
+    opt_model: bool = config[PARAMETERS_SECTION][OPT_MODEL_PARAMETER] == TRUE_STR
+    garbage_model: bool = config[PARAMETERS_SECTION][GARBAGE_MODEL_PARAMETER] == TRUE_STR
     if (
         os.path.isfile(SLASH_STR.join([data_path, pretrained_train_labels]))
         and os.path.isfile(SLASH_STR.join([data_path, pretrained_train]))
@@ -81,13 +81,13 @@ def train():
     variables_to_optimise = tmm.fit(
         config,
         merged_train_valid,
-        bayesian_optimisation=False,
+        bayesian_optimisation=True,
         random_search=False,
         apply_smote=False,
     )
     tmm.predict(merged_test_valid)
     Serialization.save_state(tmm, model_name, model_path)
-    if opt_model:
+    if opt_model is True:
         merged_train_valid = merged_train_valid[variables_to_optimise]
         merged_test_valid = merged_test_valid[variables_to_optimise]
         tmm_opt = TrainMLModel()
@@ -107,7 +107,7 @@ def train():
         else:
             edc.load_objects(merged_train_valid, tmm.xgb_model)
         edc.train_explainer_dashboard(config)
-    if garbage_model:
+    if garbage_model is True:
         print("Garbage model")
         fs_garbage = FeatureSelection()
         proper_columns = [

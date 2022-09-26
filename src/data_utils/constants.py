@@ -38,6 +38,7 @@ MIN = "min"
 MAX = "max"
 MEAN = "mean"
 SUM = "sum"
+TRUE_STR = "True"
 
 # VARIABLES
 
