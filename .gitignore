@@ -2,3 +2,5 @@
 .DS_Store
 data/
 __pycache__/
+*.py_
+*.py[cod]
