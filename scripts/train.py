@@ -18,6 +18,8 @@ def train():
     pretrained_train_labels = config[INPUT_SECTION][PRETRAINED_TRAIN_LABELS]
     pretrained_test = config[INPUT_SECTION][PRETRAINED_TEST]
     pretrained_test_labels = config[INPUT_SECTION][PRETRAINED_TEST_LABELS]
+    pretrained_oot = config[INPUT_SECTION][PRETRAINED_OOT]
+    pretrained_oot_labels = config[INPUT_SECTION][PRETRAINED_OOT_LABELS]
     model_path = config[MODEL_SECTION][MODEL_PATH]
     model_name = config[MODEL_SECTION][MODEL_NAME]
     dashboard_yml_file = config[MODEL_SECTION][DASHBOARD_YML_NAME]
@@ -30,12 +32,16 @@ def train():
         and os.path.isfile(SLASH_STR.join([data_path, pretrained_train]))
         and os.path.isfile(SLASH_STR.join([data_path, pretrained_test_labels]))
         and os.path.isfile(SLASH_STR.join([data_path, pretrained_test]))
+        and os.path.isfile(SLASH_STR.join([data_path, pretrained_oot_labels]))
+        and os.path.isfile(SLASH_STR.join([data_path, pretrained_oot]))
     ):
         print("Loading pretrained data files")
         data_target_train = Serialization.load_state(pretrained_train_labels, data_path)
         data_training_train = Serialization.load_state(pretrained_train, data_path)
         data_target_test = Serialization.load_state(pretrained_test_labels, data_path)
         data_training_test = Serialization.load_state(pretrained_test, data_path)
+        data_target_oot = Serialization.load_state(pretrained_oot_labels, data_path)
+        data_training_oot = Serialization.load_state(pretrained_oot, data_path)
         print("Pretrained data files loaded")
     else:
         dl = DataLoader()
@@ -50,6 +56,9 @@ def train():
         )
         data_target_test, data_training_test = dp.extract_data_range(
             DATES_FOR_TEST_SET, pretrained_test, pretrained_test_labels
+        )
+        data_target_oot, data_training_oot = dp.extract_data_range(
+            DATES_FOR_OOT_SET, pretrained_oot, pretrained_oot_labels
         )
         dp.release_memory()
         print(f"Data train and test serialized and saved in {data_path}")
@@ -76,16 +85,23 @@ def train():
     merged_test_valid = fs.convert_to_dummy(
         merged_test, columns_to_drop=COLUMNS_TO_DROP
     )
+    merged_oot = fs.prepare_methed_dataset(
+        config, data_training_oot, data_target_oot, train=False
+    )
+    merged_oot_valid = fs.convert_to_dummy(
+        merged_oot, columns_to_drop=COLUMNS_TO_DROP
+    )
     print("Training model")
     tmm = TrainMLModel()
     variables_to_optimise = tmm.fit(
         config,
         merged_train_valid,
         bayesian_optimisation=False,
-        random_search=True,
+        random_search=False,
         apply_smote=False,
     )
     tmm.predict(merged_test_valid)
+    tmm.predict(merged_oot_valid)
     Serialization.save_state(tmm, model_name, model_path)
     if opt_model is True:
         merged_train_valid = merged_train_valid[variables_to_optimise]
