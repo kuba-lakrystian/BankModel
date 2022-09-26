@@ -38,6 +38,7 @@ MIN = "min"
 MAX = "max"
 MEAN = "mean"
 SUM = "sum"
+TRUE_STR = "True"
 
 # VARIABLES
 
@@ -45,7 +46,7 @@ CHI_SQUARE = "Chi_Square"
 IV = "IV"
 EXTRATREES = "Extratrees"
 L1 = "L1"
-RFE = "RFE"
+RFE_VALUE = "RFE_value"
 VIF = "VIF"
 COUNT = "count"
 DATE = "DATE"

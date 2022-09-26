@@ -144,7 +144,7 @@ class FeatureSelection:
                 .astype(int)
             )
 
-        score_table[RFE] = final_results[RFE].astype(int)
+        score_table[RFE_VALUE] = final_results[RFE_VALUE].astype(int)
         score_table[L1] = final_results[L1].astype(int)
 
         score_table[FINAL_SCORE] = score_table.sum(axis=1)

@@ -117,7 +117,7 @@ class TrainMLModel:
             print(f"y_train distribution after SMOTE: {y_train.value_counts()}")
         if bayesian_optimisation:
             best_hyperparameters = self._train_bayesian_optimisation(
-                X_train, y_train, X_test, y_test
+                X_train, y_train, X_test, y_test, set_seed
             )
             self.xgb_model = xgb.XGBClassifier(
                 random_state=set_seed,
@@ -125,7 +125,7 @@ class TrainMLModel:
                 **best_hyperparameters,
             )
         elif random_search:
-            best_hyperparameters = self._train_random_search(X_train, y_train)
+            best_hyperparameters = self._train_random_search(X_train, y_train, set_seed)
             self.xgb_model = xgb.XGBClassifier(
                 random_state=set_seed,
                 n_jobs=multiprocessing.cpu_count(),
@@ -189,17 +189,20 @@ class TrainMLModel:
             self.X_train,
             self.y_train,
             eval_set=evaluation,
-            eval_metric="auc",
+            eval_metric="aucpr",
             early_stopping_rounds=10,
             verbose=False,
         )
 
         pred = clf.predict(self.X_test)
-        accuracy = accuracy_score(self.y_test, pred > 0.01)
-        print("SCORE:", accuracy)
-        return {"loss": -accuracy, "status": STATUS_OK}
+        precision, recall, thresholds = precision_recall_curve(
+            self.y_test, pred
+        )
+        pr_auc = auc(recall, precision)
+        print("SCORE:", pr_auc)
+        return {"loss": pr_auc, "status": STATUS_OK}
 
-    def _train_bayesian_optimisation(self, X_train, y_train, X_test, y_test):
+    def _train_bayesian_optimisation(self, X_train, y_train, X_test, y_test, set_seed):
         self.X_train = X_train
         self.y_train = y_train
         self.X_test = X_test
@@ -218,7 +221,7 @@ class TrainMLModel:
         self._release_memory()
         return best_hyperparams
 
-    def _train_random_search(self, X, y):
+    def _train_random_search(self, X, y, set_seed):
         self.X_train = X
         self.y_train = y
 
