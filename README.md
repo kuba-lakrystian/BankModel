@@ -7,6 +7,10 @@ In order to find the best approach, H2O AutoML can be launched - dedicated imple
 
 The dataset can be downloaded from [here](https://www.kaggle.com/competitions/santander-product-recommendation/data) - "train_ver2.csv.zip"
 
+To format the code, **black** library was used.
+
+IMPORTANT NOTICE: IV is calculated based on the code from this [source](https://github.com/Sundar0989/Variable-Selection-Using-Python/blob/master/Variable%20Selection%20using%20Python%20-%20Vote%20based%20approach.ipynb)
+
 **Target definition**:
 
 In a particular month (denoted as t) as a success ("1") we mark a customer who did not have a credit card three months before month t (it means, did not have a credit card in months t-3, t-2 and t-1), and have a credit card in a month t and one more month (t+1).
@@ -39,7 +43,11 @@ You can use only one method at the same time. It means, if **bayesian_optimisati
 
 **Output**
 
-As a result, xgb_model is serialized and saved in **data/trained_instances** folder.
+As a result, xgb_model is serialized and saved in **data/trained_instances** folder. Moreover, files required for ExplainerDashboard for related model are saved in the project path.
+
+If you want to run ExplainerDashboard for the model, in **terminal** in your repo, run the code:
+
+explainerdashboard run dashboard.yaml
 
 Besides, in the console, you can see measures printed for train, test and OOT samples:
 
@@ -47,3 +55,7 @@ Besides, in the console, you can see measures printed for train, test and OOT sa
 2. CRM measures: Hit Rate calculated on entire sample, as well as Hit Rates on top 2.5%, 5%, 10% of customers with the highest probabilities from the model, respectively. For those subsamples, Lift is additionally calculated, which is estimated as HR_topx%sumsample/HT_entirepopulation. 
 
 IMPORTANT NOTICE: in order to calculate measures in the step 1, the following cut-off is considered: the smallest probability in top 5% subsample of train population.
+
+**Results**
+
+You can see results for all calculated scenarios [here](https://docs.google.com/spreadsheets/d/1CioEZp9BVxXqVABmrKE7Za8GV-j0IQ3L/edit?usp=sharing&ouid=100478302082861511986&rtpof=true&sd=true)

@@ -1,10 +1,9 @@
 import pandas as pd
+from functools import reduce
+from sklearn.preprocessing import OneHotEncoder
 
 from src.data_utils.constants import *
 from src.data_utils.feature_selection_functions import FeatureSelectionFunctions
-
-from sklearn.preprocessing import OneHotEncoder
-from functools import reduce
 
 pd.set_option("mode.chained_assignment", None)
 
@@ -140,7 +139,7 @@ class FeatureSelection:
         for i in columns:
             score_table[i] = (
                 final_results[INDEX]
-                .isin(list(final_results.nlargest(5, i)[INDEX]))
+                .isin(list(final_results.nlargest(20, i)[INDEX]))
                 .astype(int)
             )
 

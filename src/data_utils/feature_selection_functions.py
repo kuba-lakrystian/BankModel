@@ -1,40 +1,51 @@
-import pandas as pd
 import numpy as np
-from pandas import Series
-import scipy.stats.stats as stats
+import pandas as pd
 import re
+import scipy.stats.stats as stats
 import traceback
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
-from sklearn.feature_selection import RFE
-from sklearn.linear_model import LogisticRegression
+from pandas import Series
 from sklearn.ensemble import ExtraTreesClassifier
-from sklearn.feature_selection import SelectKBest
-from sklearn.feature_selection import chi2
+from sklearn.feature_selection import chi2, RFE, SelectFromModel, SelectKBest
+from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
-from sklearn.feature_selection import SelectFromModel
 from statsmodels.stats.outliers_influence import variance_inflation_factor
+
 from src.data_utils.constants import *
 
 max_bin = 20
 force_bin = 3
 
+BUCKET = "Bucket"
+COUNT = "COUNT"
+DIST_EVENT = "DIST_EVENT"
+DIST_NON_EVENT = "DIST_NON_EVENT"
+EVENT = "EVENT"
+EVENT_RATE = "EVENT_RATE"
 FEATURES = "Features"
+MAX_VALUE = "MAX_VALUE"
+MIN_VALUE = "MIN_VALUE"
+NON_EVENT_RATE = "NON_EVENT_RATE"
+NONEVENT = "NONEVENT"
+X_VAR = "X"
+VAR_NAME = "VAR_NAME"
+VAR = "VAR"
+WOE = "WOE"
+Y_VAR = "Y"
 
 
 class FeatureSelectionFunctions:
     @staticmethod
     def mono_bin(Y, X, n=max_bin):
-        df1 = pd.DataFrame({"X": X, "Y": Y})
-        justmiss = df1[["X", "Y"]][df1.X.isnull()]
-        notmiss = df1[["X", "Y"]][df1.X.notnull()]
+        df1 = pd.DataFrame({X_VAR: X, Y_VAR: Y})
+        justmiss = df1[[X_VAR, Y_VAR]][df1[X_VAR].isnull()]
+        notmiss = df1[[X_VAR, Y_VAR]][df1[X_VAR].notnull()]
         r = 0
         while np.abs(r) < 1:
             try:
                 d1 = pd.DataFrame(
-                    {"X": notmiss.X, "Y": notmiss.Y, "Bucket": pd.qcut(notmiss.X, n)}
+                    {X_VAR: notmiss.X, Y_VAR: notmiss.Y, BUCKET: pd.qcut(notmiss.X, n)}
                 )
-                d2 = d1.groupby("Bucket", as_index=True)
+                d2 = d1.groupby(BUCKET, as_index=True)
                 r, p = stats.spearmanr(d2.mean().X, d2.mean().Y)
                 n = n - 1
             except Exception as e:
@@ -48,51 +59,51 @@ class FeatureSelectionFunctions:
                 bins[1] = bins[1] - (bins[1] / 2)
             d1 = pd.DataFrame(
                 {
-                    "X": notmiss.X,
-                    "Y": notmiss.Y,
-                    "Bucket": pd.cut(notmiss.X, np.unique(bins), include_lowest=True),
+                    X_VAR: notmiss.X,
+                    Y_VAR: notmiss.Y,
+                    BUCKET: pd.cut(notmiss.X, np.unique(bins), include_lowest=True),
                 }
             )
-            d2 = d1.groupby("Bucket", as_index=True)
+            d2 = d1.groupby(BUCKET, as_index=True)
 
         d3 = pd.DataFrame({}, index=[])
-        d3["MIN_VALUE"] = d2.min().X
-        d3["MAX_VALUE"] = d2.max().X
-        d3["COUNT"] = d2.count().Y
-        d3["EVENT"] = d2.sum().Y
-        d3["NONEVENT"] = d2.count().Y - d2.sum().Y
+        d3[MIN_VALUE] = d2.min().X
+        d3[MAX_VALUE] = d2.max().X
+        d3[COUNT] = d2.count().Y
+        d3[EVENT] = d2.sum().Y
+        d3[NONEVENT] = d2.count().Y - d2.sum().Y
         d3 = d3.reset_index(drop=True)
 
         if len(justmiss.index) > 0:
-            d4 = pd.DataFrame({"MIN_VALUE": np.nan}, index=[0])
-            d4["MAX_VALUE"] = np.nan
-            d4["COUNT"] = justmiss.count().Y
-            d4["EVENT"] = justmiss.sum().Y
-            d4["NONEVENT"] = justmiss.count().Y - justmiss.sum().Y
+            d4 = pd.DataFrame({MIN_VALUE: np.nan}, index=[0])
+            d4[MAX_VALUE] = np.nan
+            d4[COUNT] = justmiss.count().Y
+            d4[EVENT] = justmiss.sum().Y
+            d4[NONEVENT] = justmiss.count().Y - justmiss.sum().Y
             d3 = d3.append(d4, ignore_index=True)
 
-        d3["EVENT_RATE"] = d3.EVENT / d3.COUNT
-        d3["NON_EVENT_RATE"] = d3.NONEVENT / d3.COUNT
-        d3["DIST_EVENT"] = d3.EVENT / d3.sum().EVENT
-        d3["DIST_NON_EVENT"] = d3.NONEVENT / d3.sum().NONEVENT
-        d3["WOE"] = np.log(d3.DIST_EVENT / d3.DIST_NON_EVENT)
-        d3[IV] = (d3.DIST_EVENT - d3.DIST_NON_EVENT) * np.log(
-            d3.DIST_EVENT / d3.DIST_NON_EVENT
+        d3[EVENT_RATE] = d3[EVENT] / d3[COUNT]
+        d3[NON_EVENT_RATE] = d3[NONEVENT] / d3[COUNT]
+        d3[DIST_EVENT] = d3[EVENT] / d3.sum().EVENT
+        d3[DIST_NON_EVENT] = d3[NONEVENT] / d3.sum().NONEVENT
+        d3[WOE] = np.log(d3[DIST_EVENT] / d3[DIST_NON_EVENT])
+        d3[IV] = (d3[DIST_EVENT] - d3[DIST_NON_EVENT]) * np.log(
+            d3[DIST_EVENT] / d3[DIST_NON_EVENT]
         )
-        d3["VAR_NAME"] = "VAR"
+        d3[VAR_NAME] = VAR
         d3 = d3[
             [
-                "VAR_NAME",
-                "MIN_VALUE",
-                "MAX_VALUE",
-                "COUNT",
-                "EVENT",
-                "EVENT_RATE",
-                "NONEVENT",
-                "NON_EVENT_RATE",
-                "DIST_EVENT",
-                "DIST_NON_EVENT",
-                "WOE",
+                VAR_NAME,
+                MIN_VALUE,
+                MAX_VALUE,
+                COUNT,
+                EVENT,
+                EVENT_RATE,
+                NONEVENT,
+                NON_EVENT_RATE,
+                DIST_EVENT,
+                DIST_NON_EVENT,
+                WOE,
                 IV,
             ]
         ]
@@ -103,48 +114,48 @@ class FeatureSelectionFunctions:
 
     @staticmethod
     def char_bin(Y, X):
-        df1 = pd.DataFrame({"X": X, "Y": Y})
-        justmiss = df1[["X", "Y"]][df1.X.isnull()]
-        notmiss = df1[["X", "Y"]][df1.X.notnull()]
-        df2 = notmiss.groupby("X", as_index=True)
+        df1 = pd.DataFrame({X_VAR: X, Y_VAR: Y})
+        justmiss = df1[[X_VAR, Y_VAR]][df1.X.isnull()]
+        notmiss = df1[[X_VAR, Y_VAR]][df1.X.notnull()]
+        df2 = notmiss.groupby(X_VAR, as_index=True)
 
         d3 = pd.DataFrame({}, index=[])
-        d3["COUNT"] = df2.count().Y
-        d3["MIN_VALUE"] = df2.sum().Y.index
-        d3["MAX_VALUE"] = d3["MIN_VALUE"]
-        d3["EVENT"] = df2.sum().Y
-        d3["NONEVENT"] = df2.count().Y - df2.sum().Y
+        d3[COUNT] = df2.count().Y
+        d3[MIN_VALUE] = df2.sum().Y.index
+        d3[MAX_VALUE] = d3[MIN_VALUE]
+        d3[EVENT] = df2.sum().Y
+        d3[NONEVENT] = df2.count().Y - df2.sum().Y
 
         if len(justmiss.index) > 0:
-            d4 = pd.DataFrame({"MIN_VALUE": np.nan}, index=[0])
-            d4["MAX_VALUE"] = np.nan
-            d4["COUNT"] = justmiss.count().Y
-            d4["EVENT"] = justmiss.sum().Y
-            d4["NONEVENT"] = justmiss.count().Y - justmiss.sum().Y
+            d4 = pd.DataFrame({MIN_VALUE: np.nan}, index=[0])
+            d4[MAX_VALUE] = np.nan
+            d4[COUNT] = justmiss.count().Y
+            d4[EVENT] = justmiss.sum().Y
+            d4[NONEVENT] = justmiss.count().Y - justmiss.sum().Y
             d3 = d3.append(d4, ignore_index=True)
 
-        d3["EVENT_RATE"] = d3.EVENT / d3.COUNT
-        d3["NON_EVENT_RATE"] = d3.NONEVENT / d3.COUNT
-        d3["DIST_EVENT"] = d3.EVENT / d3.sum().EVENT
-        d3["DIST_NON_EVENT"] = d3.NONEVENT / d3.sum().NONEVENT
-        d3["WOE"] = np.log(d3.DIST_EVENT / d3.DIST_NON_EVENT)
-        d3[IV] = (d3.DIST_EVENT - d3.DIST_NON_EVENT) * np.log(
-            d3.DIST_EVENT / d3.DIST_NON_EVENT
+        d3[EVENT_RATE] = d3[EVENT] / d3[COUNT]
+        d3[NON_EVENT_RATE] = d3[NONEVENT] / d3[COUNT]
+        d3[DIST_EVENT] = d3[EVENT] / d3.sum().EVENT
+        d3[DIST_NON_EVENT] = d3[NONEVENT] / d3.sum().NONEVENT
+        d3[WOE] = np.log(d3[DIST_EVENT] / d3[DIST_NON_EVENT])
+        d3[IV] = (d3[DIST_EVENT] - d3[DIST_NON_EVENT]) * np.log(
+            d3[DIST_EVENT] / d3[DIST_NON_EVENT]
         )
-        d3["VAR_NAME"] = "VAR"
+        d3[VAR_NAME] = VAR
         d3 = d3[
             [
-                "VAR_NAME",
-                "MIN_VALUE",
-                "MAX_VALUE",
-                "COUNT",
-                "EVENT",
-                "EVENT_RATE",
-                "NONEVENT",
-                "NON_EVENT_RATE",
-                "DIST_EVENT",
-                "DIST_NON_EVENT",
-                "WOE",
+                VAR_NAME,
+                MIN_VALUE,
+                MAX_VALUE,
+                COUNT,
+                EVENT,
+                EVENT_RATE,
+                NONEVENT,
+                NON_EVENT_RATE,
+                DIST_EVENT,
+                DIST_NON_EVENT,
+                WOE,
                 IV,
             ]
         ]
@@ -167,11 +178,11 @@ class FeatureSelectionFunctions:
             if i.upper() not in (final.upper()):
                 if np.issubdtype(df1[i], np.number) and len(Series.unique(df1[i])) > 2:
                     conv = self.mono_bin(target, df1[i])
-                    conv["VAR_NAME"] = i
+                    conv[VAR_NAME] = i
                     count = count + 1
                 else:
                     conv = self.char_bin(target, df1[i])
-                    conv["VAR_NAME"] = i
+                    conv[VAR_NAME] = i
                     count = count + 1
 
                 if count == 0:
@@ -179,9 +190,9 @@ class FeatureSelectionFunctions:
                 else:
                     iv_df = iv_df.append(conv, ignore_index=True)
 
-        iv = pd.DataFrame({IV: iv_df.groupby("VAR_NAME").IV.max()})
+        iv = pd.DataFrame({IV: iv_df.groupby(VAR_NAME).IV.max()})
         iv = iv.reset_index()
-        iv = iv.rename(columns={"VAR_NAME": "index"})
+        iv = iv.rename(columns={VAR_NAME: INDEX})
         iv.sort_values([IV], ascending=0)
         return iv.sort_values([IV], ascending=0)
 
@@ -190,7 +201,9 @@ class FeatureSelectionFunctions:
         model = LogisticRegression()
         rfe = RFE(model, n_features_to_select=20)
         rfe.fit(features, labels)
-        selected = pd.DataFrame(rfe.support_, columns=[RFE_VALUE], index=features.columns)
+        selected = pd.DataFrame(
+            rfe.support_, columns=[RFE_VALUE], index=features.columns
+        )
         selected = selected.reset_index()
         return selected
 

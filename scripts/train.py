@@ -1,12 +1,12 @@
-import os.path
 import configparser
+import os.path
 
 from src.data_loader.data_loader import DataLoader
 from src.data_loader.data_preprocess import DataPreprocess
 from src.data_loader.feature_selection import FeatureSelection
+from src.data_utils.helpers import Serialization
 from src.data_utils.constants import *
 from src.ml_models.explainerdashboard import ExplainerDashboardCustom
-from src.data_utils.helpers import Serialization
 from src.ml_models.train_ml_model import TrainMLModel
 
 
@@ -24,9 +24,13 @@ def train():
     model_name = config[MODEL_SECTION][MODEL_NAME]
     dashboard_yml_file = config[MODEL_SECTION][DASHBOARD_YML_NAME]
     dashboard_joblib_file = config[MODEL_SECTION][DASHBOARD_JOBLIB_NAME]
-    feature_selection: bool = config[PARAMETERS_SECTION][FEATURE_SELECTION_PARAMETER] == TRUE_STR
+    feature_selection: bool = (
+        config[PARAMETERS_SECTION][FEATURE_SELECTION_PARAMETER] == TRUE_STR
+    )
     opt_model: bool = config[PARAMETERS_SECTION][OPT_MODEL_PARAMETER] == TRUE_STR
-    garbage_model: bool = config[PARAMETERS_SECTION][GARBAGE_MODEL_PARAMETER] == TRUE_STR
+    garbage_model: bool = (
+        config[PARAMETERS_SECTION][GARBAGE_MODEL_PARAMETER] == TRUE_STR
+    )
     if (
         os.path.isfile(SLASH_STR.join([data_path, pretrained_train_labels]))
         and os.path.isfile(SLASH_STR.join([data_path, pretrained_train]))
@@ -88,9 +92,7 @@ def train():
     merged_oot = fs.prepare_methed_dataset(
         config, data_training_oot, data_target_oot, train=False
     )
-    merged_oot_valid = fs.convert_to_dummy(
-        merged_oot, columns_to_drop=COLUMNS_TO_DROP
-    )
+    merged_oot_valid = fs.convert_to_dummy(merged_oot, columns_to_drop=COLUMNS_TO_DROP)
     print("Training model")
     tmm = TrainMLModel()
     variables_to_optimise = tmm.fit(
@@ -106,22 +108,24 @@ def train():
     if opt_model is True:
         merged_train_valid = merged_train_valid[variables_to_optimise]
         merged_test_valid = merged_test_valid[variables_to_optimise]
+        merged_oot_valid = merged_oot_valid[variables_to_optimise]
         tmm_opt = TrainMLModel()
         tmm_opt.fit(
             config,
             merged_train_valid,
-            bayesian_optimisation=False,
+            bayesian_optimisation=True,
             random_search=False,
             apply_smote=False,
         )
         tmm_opt.predict(merged_test_valid)
-    if not os.path.isfile(dashboard_yml_file) and os.path.isfile(dashboard_joblib_file):
+        tmm_opt.predict(merged_oot_valid)
+    if not os.path.isfile(dashboard_yml_file):
         print("ExplainerDashboard calculated")
         edc = ExplainerDashboardCustom()
         if opt_model:
-            edc.load_objects(merged_train_valid, tmm_opt.xgb_model)
+            edc.load_objects(merged_test_valid, tmm_opt.xgb_model)
         else:
-            edc.load_objects(merged_train_valid, tmm.xgb_model)
+            edc.load_objects(merged_test_valid, tmm.xgb_model)
         edc.train_explainer_dashboard(config)
     if garbage_model is True:
         print("Garbage model")
@@ -130,22 +134,26 @@ def train():
             x
             for x in list(merged_train.columns)
             if x not in COLUMNS_TO_DROP and x != TARGET and x != NCODPERS
-        ] + [FECHA_DATO, CONYUEMP]
+        ] + [FECHA_DATO, CONYUEMP, SUM_6M, SUM_3M, MIN_3M, MIN_6M, MEAN_3M, MEAN_6M]
         merged_train_garbage = fs_garbage.convert_to_dummy(
             merged_train, columns_to_drop=proper_columns
         )
         merged_test_garbage = fs_garbage.convert_to_dummy(
             merged_test, columns_to_drop=proper_columns
         )
+        merged_oot_garbage = fs_garbage.convert_to_dummy(
+            merged_oot, columns_to_drop=proper_columns
+        )
         tmm_garbage = TrainMLModel()
         tmm_garbage.fit(
             config,
             merged_train_garbage,
-            bayesian_optimisation=False,
+            bayesian_optimisation=True,
             random_search=False,
             apply_smote=False,
         )
         tmm_garbage.predict(merged_test_garbage)
+        tmm_garbage.predict(merged_oot_garbage)
 
 
 if __name__ == "__main__":

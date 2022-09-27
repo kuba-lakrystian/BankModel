@@ -1,8 +1,9 @@
-from src.data_utils.helpers import Serialization
-from src.data_utils.constants import *
-
 import h2o
 from h2o.automl import H2OAutoML
+
+from src.data_utils.constants import *
+from src.data_utils.helpers import Serialization
+
 
 SET_SEED = 42
 
@@ -14,7 +15,7 @@ X_train = merged.drop(columns=[FECHA_DATO, NCODPERS])
 X_train_h2o = h2o.H2OFrame(X_train)
 
 x = X_train_h2o.columns
-y = "target"
+y = TARGET
 x = x.remove(y)
 
 X_train_h2o[y] = X_train_h2o[y].asfactor()

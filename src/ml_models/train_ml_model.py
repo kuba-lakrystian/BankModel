@@ -32,11 +32,11 @@ space = {
 }
 
 params = {
-    "learning_rate": [0.05, 0.10, 0.15, 0.20, 0.25, 0.30],
+    "learning_rate": [0.15, 0.20, 0.25, 0.30, 0.35, 0.4],
     "max_depth": [3, 4, 5, 6, 8, 10, 12, 15],
     "min_child_weight": [1, 3, 5, 7],
     "gamma": [0.0, 0.1, 0.2, 0.3, 0.4],
-    "colsample_bytree": [0.3, 0.4, 0.5, 0.7],
+    "colsample_bytree": [0.4, 0.5, 0.7, 1],
 }
 
 current_hyperparameters = {
@@ -174,6 +174,7 @@ class TrainMLModel:
         df[PREDICT_PROBA] = self.xgb_model.predict_proba(X_train)[:, 1]
         self._calculate_hit_rate_and_lift(df)
         self._calculate_predictive_power(df)
+        df.drop(columns=[PREDICT_PROBA, PREDICT], inplace=True)
 
     def objective(self, space):
         clf = xgb.XGBClassifier(
@@ -197,9 +198,7 @@ class TrainMLModel:
         )
 
         pred = clf.predict(self.X_test)
-        precision, recall, thresholds = precision_recall_curve(
-            self.y_test, pred
-        )
+        precision, recall, thresholds = precision_recall_curve(self.y_test, pred)
         pr_auc = auc(recall, precision)
         print("SCORE:", pr_auc)
         return {"loss": pr_auc, "status": STATUS_OK}
@@ -293,6 +292,7 @@ class TrainMLModel:
         print(results)
         if self.cut_off is None:
             self.cut_off = df_temp_5_perc[PREDICT_PROBA].min()
+            print(f'Calculated cut-off: {self.cut_off}')
 
     def _release_memory(self):
         self.X_train = None

@@ -1,13 +1,10 @@
+from explainerdashboard import ClassifierExplainer, ExplainerDashboard
 import pandas as pd
 import matplotlib as mpl
 
-mpl.use("TkAgg")
-import matplotlib.pyplot as plt
-from explainerdashboard import ClassifierExplainer, ExplainerDashboard
 from src.data_utils.constants import *
 
-# #db.run()
-# #explainerdashboard run dashboard.yaml inside virtualenv(in pycharm)
+mpl.use("TkAgg")
 
 DASHBOARD_NAME = "BankModel"
 
@@ -25,7 +22,8 @@ class ExplainerDashboardCustom:
         dashboard_yml_file = config[MODEL_SECTION][DASHBOARD_YML_NAME]
         dashboard_joblib_file = config[MODEL_SECTION][DASHBOARD_JOBLIB_NAME]
 
-        X_train = self.df.drop(columns=[TARGET, FECHA_DATO, NCODPERS])
+        X_train = self.df.drop(columns=[TARGET, NCODPERS])
+        X_train.index = self.df[NCODPERS]
         y_train = self.df[TARGET]
 
         explainer = ClassifierExplainer(self.xgb_model, X_train, y_train)
