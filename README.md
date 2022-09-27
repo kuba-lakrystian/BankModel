@@ -45,7 +45,7 @@ You can use only one method at the same time. It means, if **bayesian_optimisati
 
 As a result, xgb_model is serialized and saved in **data/trained_instances** folder. Moreover, files required for ExplainerDashboard for related model are saved in the project path.
 
-If you want to run ExplainerDashboard for the model, in **terminal** in your repo, run the code:
+If you want to run ExplainerDashboard for the model, download the files from [here](https://drive.google.com/file/d/1RHep2OOvRS37-Nqo1hkQyD9T6Eby-VSF/view?usp=sharing), unpack and paste them in your project folder and in **terminal** in your repo, run the code:
 
 explainerdashboard run dashboard.yaml
 
@@ -58,4 +58,8 @@ IMPORTANT NOTICE: in order to calculate measures in the step 1, the following cu
 
 **Results**
 
-You can see results for all calculated scenarios [here](https://docs.google.com/spreadsheets/d/1CioEZp9BVxXqVABmrKE7Za8GV-j0IQ3L/edit?usp=sharing&ouid=100478302082861511986&rtpof=true&sd=true)
+6 scenarios were tested: standard XGBoost hyperparameters, Bayesian Optimisation and Random Search, each using original dataset and SMOTE algorithm.
+For each model, standard Machine Learning statistics were applied (spreadsheets with "ML" in name) and also HR and Lift for best 2,5%, 5% and 10% of population (spreadsheets with "CRM" in name).
+You can see results for all calculated scenarios [here](https://docs.google.com/spreadsheets/d/1mWv4SeHmQYu-34xHAfVArVmW9or6PoNE/edit?usp=sharing&ouid=100478302082861511986&rtpof=true&sd=true)
+
+Final summary of the project is gathered in the presentation [here](https://drive.google.com/file/d/1yWjNh49JGABvQlX-IQl0q25z1crU5tZz/view?usp=sharing)

@@ -120,5 +120,5 @@ COLUMNS_TO_DROP = [
     "ind_plan_fin_ult1_max3m",
     "ind_pres_fin_ult1_max3m",
     "ult_fec_cli_1t",
-    NOMPROV
+    NOMPROV,
 ]
