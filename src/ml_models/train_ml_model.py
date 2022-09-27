@@ -292,7 +292,7 @@ class TrainMLModel:
         print(results)
         if self.cut_off is None:
             self.cut_off = df_temp_5_perc[PREDICT_PROBA].min()
-            print(f'Calculated cut-off: {self.cut_off}')
+            print(f"Calculated cut-off: {self.cut_off}")
 
     def _release_memory(self):
         self.X_train = None
