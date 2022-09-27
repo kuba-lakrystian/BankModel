@@ -55,3 +55,7 @@ Besides, in the console, you can see measures printed for train, test and OOT sa
 2. CRM measures: Hit Rate calculated on entire sample, as well as Hit Rates on top 2.5%, 5%, 10% of customers with the highest probabilities from the model, respectively. For those subsamples, Lift is additionally calculated, which is estimated as HR_topx%sumsample/HT_entirepopulation. 
 
 IMPORTANT NOTICE: in order to calculate measures in the step 1, the following cut-off is considered: the smallest probability in top 5% subsample of train population.
+
+**Results**
+
+You can see results for all calculated scenarios [here](https://docs.google.com/spreadsheets/d/1CioEZp9BVxXqVABmrKE7Za8GV-j0IQ3L/edit?usp=sharing&ouid=100478302082861511986&rtpof=true&sd=true)

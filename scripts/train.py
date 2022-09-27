@@ -98,7 +98,7 @@ def train():
     variables_to_optimise = tmm.fit(
         config,
         merged_train_valid,
-        bayesian_optimisation=False,
+        bayesian_optimisation=True,
         random_search=False,
         apply_smote=False,
     )
@@ -113,19 +113,19 @@ def train():
         tmm_opt.fit(
             config,
             merged_train_valid,
-            bayesian_optimisation=False,
+            bayesian_optimisation=True,
             random_search=False,
             apply_smote=False,
         )
         tmm_opt.predict(merged_test_valid)
         tmm_opt.predict(merged_oot_valid)
-    if not os.path.isfile(dashboard_yml_file) and os.path.isfile(dashboard_joblib_file):
+    if not os.path.isfile(dashboard_yml_file):
         print("ExplainerDashboard calculated")
         edc = ExplainerDashboardCustom()
         if opt_model:
-            edc.load_objects(merged_train_valid, tmm_opt.xgb_model)
+            edc.load_objects(merged_test_valid, tmm_opt.xgb_model)
         else:
-            edc.load_objects(merged_train_valid, tmm.xgb_model)
+            edc.load_objects(merged_test_valid, tmm.xgb_model)
         edc.train_explainer_dashboard(config)
     if garbage_model is True:
         print("Garbage model")
@@ -148,7 +148,7 @@ def train():
         tmm_garbage.fit(
             config,
             merged_train_garbage,
-            bayesian_optimisation=False,
+            bayesian_optimisation=True,
             random_search=False,
             apply_smote=False,
         )

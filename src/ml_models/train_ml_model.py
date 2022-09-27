@@ -174,6 +174,7 @@ class TrainMLModel:
         df[PREDICT_PROBA] = self.xgb_model.predict_proba(X_train)[:, 1]
         self._calculate_hit_rate_and_lift(df)
         self._calculate_predictive_power(df)
+        df.drop(columns=[PREDICT_PROBA, PREDICT], inplace=True)
 
     def objective(self, space):
         clf = xgb.XGBClassifier(
@@ -291,6 +292,7 @@ class TrainMLModel:
         print(results)
         if self.cut_off is None:
             self.cut_off = df_temp_5_perc[PREDICT_PROBA].min()
+            print(f'Calculated cut-off: {self.cut_off}')
 
     def _release_memory(self):
         self.X_train = None
