@@ -58,4 +58,6 @@ IMPORTANT NOTICE: in order to calculate measures in the step 1, the following cu
 
 **Results**
 
-You can see results for all calculated scenarios [here](https://docs.google.com/spreadsheets/d/1CioEZp9BVxXqVABmrKE7Za8GV-j0IQ3L/edit?usp=sharing&ouid=100478302082861511986&rtpof=true&sd=true)
+6 scenarios were tested: standard XGBoost hyperparameters, Bayesian Optimisation and Random Search, each using original dataset and SMOTE algorithm.
+For each model, standard Machine Learning statistics were applied (spreadsheets with "ML" in name) and also HR and Lift for best 2,5%, 5% and 10% of population (spreadsheets with "CRM" in name).
+You can see results for all calculated scenarios [here](https://docs.google.com/spreadsheets/d/1mWv4SeHmQYu-34xHAfVArVmW9or6PoNE/edit?usp=sharing&ouid=100478302082861511986&rtpof=true&sd=true)
