@@ -1,0 +1,337 @@
+---
+title: "BankModel"
+author: "Krystian Kubala"
+date: "2022-09-28"
+output: 
+  html_document:
+    df_print: paged
+    highlight: tango
+    number_sections: no
+    theme: flatly
+    toc: yes
+    toc_depth: 2
+    toc_float: yes
+---
+
+# Introduction
+
+The aim of this document is to recreate steps (to maximal possible extend) from development of Propensity Model for Credit Cards prepared in Python. Becuse of that, the process in R is limited to implementation of all necessary steps, however, lower number of hyperparameters is tuned. Moreover, number of iterations in Bayesian Optimisation is also reduced. 
+
+It is also important that some results (like numbers of groups for factor variables) is directly copied from Python code, due to they were already trained in a dedicated tool. 
+
+Besides, in this project, only train and test samples are used - Out-Of-Time1 and Out-Of-Time2 datasets are excluded. 
+
+For more details about the model, look into the Python project and presentation (the link is attached to the description of the BankModel repository).
+
+# Loading libraries
+
+```{r libraries, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(tidymodels)
+library(doParallel)
+library(xgboost)
+library(pROC)
+library(caret)
+library(DT)
+```
+
+# Load dataset
+
+In this case, the same raw dataset as in the main python code is loaded.
+
+```{r load_data, message = FALSE, warning = FALSE}
+data <- read_csv("/Users/krystiankubala/Desktop/Projekty/BankModel/data/data_recommendation_engine/train_ver2.csv")
+```
+
+# Target for the model
+
+In this step we are going to recreate target variable, with the same assumptions:
+
+A customer is considered as positive at the moment (month) t, if was an active customer in a month t-1; did not have any active credit card within the period t-3, t-2 and t-1, and had active credit card in the months t and t+1 (to avoid so-called empty sell phenomenon).
+
+```{r data_status, message = FALSE, warning = FALSE}
+data_target_all <- data %>% 
+  select(ncodpers, fecha_dato, ind_tjcr_fin_ult1) %>% 
+  group_by(ncodpers) %>% 
+  mutate(ind_tjcr_fin_ult1_laged_1 = lag(ind_tjcr_fin_ult1, n = 1, default = NA, order_by = fecha_dato),
+         ind_tjcr_fin_ult1_laged_2 = lag(ind_tjcr_fin_ult1, n = 2, default = NA, order_by = fecha_dato), 
+         ind_tjcr_fin_ult1_laged_3 = lag(ind_tjcr_fin_ult1, n = 3, default = NA, order_by = fecha_dato), 
+         ind_tjcr_fin_ult1_after_1 = lead(ind_tjcr_fin_ult1, n = 1, default = NA, order_by = fecha_dato)) %>% 
+  ungroup(ncodpers) %>% 
+  mutate(status = if_else(ind_tjcr_fin_ult1_laged_1 == 0 & ind_tjcr_fin_ult1_laged_2 == 0 & ind_tjcr_fin_ult1_laged_3 == 0 & ind_tjcr_fin_ult1 == 1 & ind_tjcr_fin_ult1_after_1 == 1, 1, 0)) %>% 
+  mutate(status = if_else(is.na(status), 0, status)) 
+  
+data_target <- data_target_all %>% 
+  filter(fecha_dato == '2015-07-28') %>% 
+  select(ncodpers, status)
+```
+
+According to the definition introduced above, observed hit rates over time are depicted on the diagram below.
+
+```{r, hr_diagram}
+data_target_all %>% 
+  select(fecha_dato, status) %>% 
+  group_by(fecha_dato) %>% 
+  summarise(n_positives = sum(status),
+            n_total = n(),
+            hr = n_positives/n_total*100) %>% 
+  ungroup() %>% 
+  filter(fecha_dato > '2015-04-01' & fecha_dato < '2016-05-01') %>% 
+  select(fecha_dato, hr) %>% 
+  ggplot(aes(x=fecha_dato, y=hr)) +
+  geom_line() + 
+  labs(title = "Hit rate (consistent with target definition in the model)",
+       subtitle = "Over time",
+       y = "Hit Rate [%]",
+       x = "Time")
+```
+
+# Calculate independent variables
+
+List of variables taken to analysis is based on results of feature selection calculated in Python. Here, final list of important variables is applied.
+
+## One month before purchase
+
+In this case, the variables are just values of corresponding characteristics one month before purchase.
+
+```{r, constant_variables, message = FALSE, warning = FALSE}
+list_valid <- data %>% select(ncodpers, fecha_dato) %>% 
+  filter(fecha_dato > '2015-01-01' & fecha_dato < '2015-06-30') %>% 
+  count(ncodpers) %>% 
+  filter(n == 6) %>% 
+  select(ncodpers) %>% 
+  pull
+
+variables_constant <- data %>% 
+  filter(fecha_dato == '2015-06-28') %>% 
+  filter(ind_actividad_cliente == 1) %>% 
+  filter(ncodpers %in% list_valid) %>% 
+  select(ncodpers, age, indrel, sexo, tiprel_1mes, indext, canal_entrada, segmento) %>% 
+  mutate_if(is.factor, funs(replace(as.character(.), is.na(.), "Other"))) %>% 
+  mutate(canal_entrada = fct_lump_n(canal_entrada, n = 3),
+         segmento = fct_lump_n(segmento, n = 3),
+         indext = fct_lump_n(indext, n = 2),
+         tiprel_1mes = fct_lump_n(tiprel_1mes, n = 2),
+         sexo = fct_lump_n(sexo, n = 1)) 
+```
+## Transformations of salary variable
+
+Based on values of salary variable, the following transformations are applied: mean, sum, min and max over 3 and 6 months before purchase.
+
+IMPORTANT NOTICE: There is an issue with raw dataset because all values of salary are constant ober time for each customer (they are different between customers, but each customer has the same value assigned for all time periods). That is why, eventually, we just take max, as all transformations would return the same values (sum divided by 3 and 6 would give us mean).
+
+```{r salaries, message = FALSE, warning = FALSE}
+valid_cust <- data %>% 
+  filter(fecha_dato > '2015-01-01' & fecha_dato < '2015-06-30') %>% 
+  select(fecha_dato, ncodpers, renta) %>% 
+  group_by(ncodpers) %>% 
+  summarise(non_na_count = sum(!is.na(renta))) %>% 
+  filter(non_na_count > 3) %>% 
+  select(ncodpers) %>% 
+  pull
+
+salary_3m <- data %>% 
+  filter(fecha_dato > '2015-04-01' & fecha_dato < '2015-06-30') %>% 
+  filter(ncodpers %in% valid_cust) %>% 
+  select(fecha_dato, ncodpers, renta) %>% 
+  group_by(ncodpers) %>% 
+  summarise(sum_3m = sum(renta), mean_3m = mean(renta), min_3m = min(renta), 
+            max_3m = max(renta)) %>% 
+  ungroup()
+
+salary_6m <- data %>% 
+  filter(fecha_dato > '2015-01-01' & fecha_dato < '2015-06-30') %>% 
+  filter(ncodpers %in% valid_cust) %>% select(fecha_dato, ncodpers, renta) %>% 
+  group_by(ncodpers) %>% 
+  summarise(sum_6m = sum(renta), mean_6m = mean(renta), min_6m = min(renta), 
+            max_6m = max(renta)) %>% 
+  ungroup()
+
+salary <- salary_3m %>% 
+  inner_join(salary_6m, by = 'ncodpers') %>% 
+  select(ncodpers, max_3m, max_6m)
+```
+
+## Activity variables
+
+For all variables correspinding with activity statuses on different bank products, the same transformation is applied. Namely, new variables are max over 3 months before purchase. It describes whether a customer had a particular product active in at least one month (from 3 months) before purchase of a credit card.
+
+```{r act_variables, message = FALSE, warning = FALSE}
+act_variables <- data %>% filter(fecha_dato > '2015-04-01' & fecha_dato < '2015-06-30') %>% 
+  select(ncodpers,ind_cco_fin_ult1, ind_cno_fin_ult1,
+       ind_ctop_fin_ult1, ind_ctpp_fin_ult1,
+       ind_dela_fin_ult1, ind_ecue_fin_ult1,
+       ind_fond_fin_ult1, ind_reca_fin_ult1,
+       ind_valo_fin_ult1, ind_nomina_ult1,
+       ind_nom_pens_ult1, ind_recibo_ult1) %>% 
+  mutate_if(is.numeric , replace_na, replace = 0)
+
+act_variables_fin <- act_variables %>% group_by(ncodpers) %>% 
+  summarise(across(everything(), list(max))) %>% 
+  rename_with(., ~str_replace_all(., '_1', "_max3m")) %>% 
+  ungroup()
+```
+
+# Merge datasets
+
+Finally we are able to get the same table to develop a model.
+
+```{r merge_data, message = FALSE, warning = FALSE}
+data_model <- data_target %>% 
+  inner_join(variables_constant, by = 'ncodpers') %>% 
+  inner_join(salary, by = 'ncodpers') %>% 
+  inner_join(act_variables_fin, by = 'ncodpers') %>% 
+  mutate(status = as_factor(status))
+```
+
+# Model development
+
+## Initial split for train and test
+
+We will use the same split as in Python, with stratification on the target variable. We keep 70/30 split.
+
+```{r define_cv, message = FALSE, warning = FALSE}
+split <- initial_split(data_model, prop = 0.7, strata = "status")
+
+train <- training(split)
+test <- testing(split)
+
+folds <- vfold_cv(train, v = 5)
+```
+
+## Define hyperparameters
+
+In this example, in order to reduce time required to tune hyperparameters, we will reduce number of trees in XGBoost model and will be searching for only two hyperparameters.
+
+```{r define_params, message = FALSE, warning = FALSE}
+mod <- boost_tree(
+  trees = 100,
+  min_n = tune(),
+  learn_rate = tune()
+) %>%
+  set_engine("xgboost") %>%
+  set_mode("classification")
+
+params <- parameters(mod) %>%
+  finalize(train)
+```
+
+## Define recipe
+
+Since we have factor variables, we need to transform them using one-hot encoding. 
+
+```{r define_recipe, message = FALSE, warning = FALSE}
+recipe_model <- recipe(status ~ ., train) %>%
+  step_dummy(all_nominal_predictors())
+```
+
+## Define workflow
+
+```{r define_workflow, message = FALSE, warning = FALSE}
+xgboost_wflow <- workflow() %>%
+  add_recipe(recipe_model) %>% 
+  add_model(mod)
+```
+
+## Calculate Bayesian optimisation
+
+IMPORTANT NOTICE: Number of iterations was reduced to 3 since it seems that implementation of Bayesian Optimisation in R's tidymodels is much slower than Python's hyperopt. Similarly to previous approach, we also use precision-recall auc as a measure to optimize.
+
+```{r bayes_opt, message = FALSE, warning = FALSE}
+cl <- makePSOCKcluster(8)
+registerDoParallel(cl)
+
+tuned <- tune_bayes(
+  object = xgboost_wflow,
+  resamples = folds,
+  param_info = params,
+  iter = 3,
+  metrics = metric_set(pr_auc),
+  initial = 10,
+  control = control_bayes(
+    verbose = TRUE,
+    no_improve = 10,
+    seed = 42
+  )
+)
+```
+
+## Print output
+
+Gather output from all runs.
+
+```{r, show_results, message = FALSE, warning = FALSE}
+show_best(tuned, "pr_auc")
+```
+
+## Finalize workflow after tuning
+
+```{r finalize_workflow, message = FALSE, warning = FALSE}
+xgboost_wkflow_tuned <- finalize_workflow(
+  xgboost_wflow,
+  select_best(tuned, "pr_auc")
+)
+
+final_res <- last_fit(
+  xgboost_wkflow_tuned,
+  split
+)
+```
+
+## Final metrices on train set
+
+```{r, show_metrices, message = FALSE, warning = FALSE}
+final_res %>% 
+  collect_metrics()
+```
+## Fit final model
+
+```{r final_for_workflow, message = FALSE, warning = FALSE}
+fit_workflow <- fit(xgboost_wkflow_tuned, train)
+```
+
+# Summary
+
+## Gini statistics
+
+```{r, last_predict, message = FALSE, warning = FALSE}
+predict_train <- predict(fit_workflow, train, type = "prob") 
+predict_test <- predict(fit_workflow, test, type = "prob") 
+
+gini_train <- 2*auc(train %>% select(status) %>% pull, predict_train %>% select(.pred_1) %>% pull) - 1
+gini_test <- 2*auc(test %>% select(status) %>% pull, predict_test %>% select(.pred_1) %>% pull) - 1
+
+tibble(metric = c('Gini on train set', 'Gini on test set'),
+       gini = c(gini_train, gini_test)) %>% 
+      datatable(rownames = FALSE, options = list(paging = FALSE))
+```
+
+## Precision, recall and F1 Score
+
+```{r, f1, message = FALSE, warning = FALSE}
+y_train <- as.factor(train %>% select(status) %>% pull)
+predict_train <- as.factor(predict_train %>% mutate(pred = if_else(.pred_1 >= 0.015, 1, 0)) %>% pull)
+
+y_test <- as.factor(test %>% select(status) %>% pull)
+predict_test <- as.factor(predict_test %>% mutate(pred = if_else(.pred_1 >= 0.015, 1, 0)) %>% pull)
+
+precision_train <- posPredValue(predict_train, y_train, positive="1")
+recall_train <- sensitivity(predict_train, y_train, positive="1")
+F1_train <- (2 * precision_train * recall_train) / (precision_train + recall_train)
+
+precision_test <- posPredValue(predict_test, y_test, positive="1")
+recall_test <- sensitivity(predict_test, y_test, positive="1")
+F1_test <- (2 * precision_test * recall_test) / (precision_test + recall_test)
+
+tibble(measure = c('Precision', 'Recall', 'F1'), 
+       train = c(precision_train, recall_train, F1_train), 
+       test = c(precision_test, recall_test, F1_test)) %>% 
+  datatable(rownames = FALSE, options = list(paging = FALSE))
+```
+
+# Session info
+
+```{r session_info}
+sessionInfo()
+```
+
